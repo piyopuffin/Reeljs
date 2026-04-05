@@ -1,4 +1,6 @@
 import { Meta } from '@storybook/blocks';
+import { Mermaid } from '../components/Mermaid';
+import { Table } from '../components/Table';
 
 <Meta title="Docs（日本語）/クレジット管理" />
 
@@ -8,7 +10,7 @@ import { Meta } from '@storybook/blocks';
 
 ## 操作フロー
 
-```mermaid
+<Mermaid chart={`
 flowchart TD
     A[初期クレジット] --> B[残高]
     B -->|bet| C[残高 - BET額]
@@ -16,16 +18,19 @@ flowchart TD
     D -->|deposit| E[残高 + 投入額]
     E -->|withdraw| F[残高 - 引き出し額]
     B -->|残高不足| G[エラー: BET不可]
-```
+`} />
 
 ## BetConfig
 
-| フィールド | 説明 |
-|-----------|------|
-| `initialCredit` | 初期クレジット額 |
-| `betOptions` | BET額のバリエーション（例: `[1, 2, 3]`） |
-| `defaultBet` | デフォルトBET額 |
-| `historySize` | 変動履歴の保持件数 |
+<Table
+  headers={['フィールド', '説明']}
+  rows={[
+    ['initialCredit', '初期クレジット額'],
+    ['betOptions', 'BET額のバリエーション（例: [1, 2, 3]）'],
+    ['defaultBet', 'デフォルトBET額'],
+    ['historySize', '変動履歴の保持件数'],
+  ]}
+/>
 
 ## 使用例
 

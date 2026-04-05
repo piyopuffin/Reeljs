@@ -1,4 +1,6 @@
 import { Meta } from '@storybook/blocks';
+import { Mermaid } from './components/Mermaid';
+import { Table } from './components/Table';
 
 <Meta title="Docs (EN)/Credit Manager" />
 
@@ -8,7 +10,7 @@ import { Meta } from '@storybook/blocks';
 
 ## Operations Flow
 
-```mermaid
+<Mermaid chart={`
 flowchart TD
     A[Initial Credit] --> B[Balance]
     B -->|bet| C[Balance - BET]
@@ -16,16 +18,19 @@ flowchart TD
     D -->|deposit| E[Balance + Amount]
     E -->|withdraw| F[Balance - Amount]
     B -->|Insufficient| G[Error: Cannot BET]
-```
+`} />
 
 ## BetConfig
 
-| Field | Description |
-|-------|-------------|
-| `initialCredit` | Starting balance |
-| `betOptions` | Available BET amounts (e.g. `[1, 2, 3]`) |
-| `defaultBet` | Default BET amount |
-| `historySize` | Number of history entries to keep |
+<Table
+  headers={['Field', 'Description']}
+  rows={[
+    ['initialCredit', 'Starting balance'],
+    ['betOptions', 'Available BET amounts (e.g. [1, 2, 3])'],
+    ['defaultBet', 'Default BET amount'],
+    ['historySize', 'Number of history entries to keep'],
+  ]}
+/>
 
 ## Usage
 

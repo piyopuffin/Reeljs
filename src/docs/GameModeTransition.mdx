@@ -1,4 +1,6 @@
 import { Meta } from '@storybook/blocks';
+import { Mermaid } from './components/Mermaid';
+import { Table } from './components/Table';
 
 <Meta title="Docs (EN)/Game Mode Transition" />
 
@@ -8,7 +10,7 @@ Reeljs manages four game modes via `GameModeManager`: **Normal**, **Chance**, **
 
 ## Transition Diagram
 
-```mermaid
+<Mermaid chart={`
 stateDiagram-v2
     [*] --> Normal
     Normal --> Chance : Chance transition condition met
@@ -19,16 +21,19 @@ stateDiagram-v2
     Bonus --> BT : SUPER_BIG_BONUS ended
     BT --> Bonus : WinPattern matched (SUPER_BIG_BONUS re-entry)
     BT --> Normal : Max spins / MaxPayout reached
-```
+`} />
 
 ## Mode Overview
 
-| Mode | Entry Condition | Exit Condition |
-|------|----------------|----------------|
-| Normal | Game start / Bonus end | Chance or Bonus triggered |
-| Chance | `normalToChance` probability | WinPattern → BT, or max spins |
-| Bonus | InternalLottery BONUS win | Max spins or MaxPayout |
-| BT | SUPER_BIG_BONUS end / Chance WinPattern | Max spins or MaxPayout |
+<Table
+  headers={['Mode', 'Entry Condition', 'Exit Condition']}
+  rows={[
+    ['Normal', 'Game start / Bonus end', 'Chance or Bonus triggered'],
+    ['Chance', 'normalToChance probability', 'WinPattern → BT, or max spins'],
+    ['Bonus', 'InternalLottery BONUS win', 'Max spins or MaxPayout'],
+    ['BT', 'SUPER_BIG_BONUS end / Chance WinPattern', 'Max spins or MaxPayout'],
+  ]}
+/>
 
 ## Usage
 

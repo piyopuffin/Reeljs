@@ -1,4 +1,6 @@
 import { Meta } from '@storybook/blocks';
+import { Mermaid } from './components/Mermaid';
+import { Table } from './components/Table';
 
 <Meta title="Docs (EN)/Notification Flow" />
 
@@ -8,16 +10,19 @@ import { Meta } from '@storybook/blocks';
 
 ## Notification Types
 
-| Type | Timing | Description |
-|------|--------|-------------|
-| `PRE_SPIN` | Before spin starts | Notify win before reels spin |
-| `POST_SPIN` | After reels stop | Notify win after result confirmed |
-| `NEXT_BET` | Next game BET | Notify previous game's win on next BET |
-| `LEVER_ON` | Lever ON | Notify win at lever pull |
+<Table
+  headers={['Type', 'Timing', 'Description']}
+  rows={[
+    ['PRE_SPIN', 'Before spin starts', 'Notify win before reels spin'],
+    ['POST_SPIN', 'After reels stop', 'Notify win after result confirmed'],
+    ['NEXT_BET', 'Next game BET', "Notify previous game's win on next BET"],
+    ['LEVER_ON', 'Lever ON', 'Notify win at lever pull'],
+  ]}
+/>
 
 ## Flow Diagram
 
-```mermaid
+<Mermaid chart={`
 sequenceDiagram
     participant GCM as GameCycleManager
     participant IL as InternalLottery
@@ -37,7 +42,7 @@ sequenceDiagram
     GCM->>NM: check(NEXT_BET)
     NM-->>Dev: onNotification(payload)
     NM->>NM: clearPreviousWin()
-```
+`} />
 
 ## Usage
 

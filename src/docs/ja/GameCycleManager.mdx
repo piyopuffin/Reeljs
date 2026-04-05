@@ -1,4 +1,6 @@
 import { Meta } from '@storybook/blocks';
+import { Mermaid } from '../components/Mermaid';
+import { Table } from '../components/Table';
 
 <Meta title="Docs（日本語）/ゲームサイクル管理" />
 
@@ -8,7 +10,7 @@ import { Meta } from '@storybook/blocks';
 
 ## フェーズフロー
 
-```mermaid
+<Mermaid chart={`
 stateDiagram-v2
     [*] --> BET
     BET --> LEVER_ON
@@ -25,22 +27,25 @@ stateDiagram-v2
     ZONE_UPDATE --> COUNTER_UPDATE
     COUNTER_UPDATE --> WAITING
     WAITING --> BET : 通常
-    WAITING --> LEVER_ON : リプレイ（BETスキップ）
-```
+    WAITING --> LEVER_ON : リプレイ
+`} />
 
 ## 各フェーズの担当モジュール
 
-| フェーズ | 呼び出すモジュール |
-|---------|-----------------|
-| BET | CreditManager |
-| INTERNAL_LOTTERY | InternalLottery |
-| NOTIFICATION_CHECK | NotificationManager |
-| REEL_SPINNING | SpinEngine |
-| WIN_JUDGE | Payline評価 |
-| PAYOUT | CreditManager |
-| MODE_TRANSITION | GameModeManager |
-| ZONE_UPDATE | ZoneManager |
-| COUNTER_UPDATE | SpinCounter |
+<Table
+  headers={['フェーズ', '呼び出すモジュール']}
+  rows={[
+    ['BET', 'CreditManager'],
+    ['INTERNAL_LOTTERY', 'InternalLottery'],
+    ['NOTIFICATION_CHECK', 'NotificationManager'],
+    ['REEL_SPINNING', 'SpinEngine'],
+    ['WIN_JUDGE', 'Payline評価'],
+    ['PAYOUT', 'CreditManager'],
+    ['MODE_TRANSITION', 'GameModeManager'],
+    ['ZONE_UPDATE', 'ZoneManager'],
+    ['COUNTER_UPDATE', 'SpinCounter'],
+  ]}
+/>
 
 ## 使用例
 

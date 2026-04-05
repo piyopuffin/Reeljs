@@ -1,4 +1,6 @@
 import { Meta } from '@storybook/blocks';
+import { Mermaid } from '../components/Mermaid';
+import { Table } from '../components/Table';
 
 <Meta title="Docs（日本語）/ゲームモード遷移" />
 
@@ -8,27 +10,30 @@ import { Meta } from '@storybook/blocks';
 
 ## 遷移図
 
-```mermaid
+<Mermaid chart={`
 stateDiagram-v2
     [*] --> Normal
     Normal --> Chance : チャンスモード遷移条件成立
-    Normal --> Bonus : ボーナス当選（InternalLottery）
+    Normal --> Bonus : ボーナス当選
     Chance --> BT : WinPattern成立
-    Chance --> Normal : 継続スピン数上限 / MaxPayout到達
-    Bonus --> Normal : BIG_BONUS / REG_BONUS 終了
-    Bonus --> BT : SUPER_BIG_BONUS 終了
-    BT --> Bonus : WinPattern成立（SUPER_BIG_BONUS再突入）
-    BT --> Normal : 継続スピン数上限 / MaxPayout到達
-```
+    Chance --> Normal : 上限到達
+    Bonus --> Normal : BIG/REG終了
+    Bonus --> BT : SBB終了
+    BT --> Bonus : WinPattern成立
+    BT --> Normal : 上限到達
+`} />
 
 ## モード一覧
 
-| モード | 突入条件 | 終了条件 |
-|--------|---------|---------|
-| Normal | ゲーム開始 / ボーナス終了 | Chance or Bonus 突入 |
-| Chance | `normalToChance` 確率判定 | WinPattern → BT、または上限到達 |
-| Bonus | InternalLottery BONUS当選 | 継続スピン数 or MaxPayout |
-| BT | SUPER_BIG_BONUS終了 / Chance WinPattern | 継続スピン数 or MaxPayout |
+<Table
+  headers={['モード', '突入条件', '終了条件']}
+  rows={[
+    ['Normal', 'ゲーム開始 / ボーナス終了', 'Chance or Bonus 突入'],
+    ['Chance', 'normalToChance 確率判定', 'WinPattern → BT、または上限到達'],
+    ['Bonus', 'InternalLottery BONUS当選', '継続スピン数 or MaxPayout'],
+    ['BT', 'SBB終了 / Chance WinPattern', '継続スピン数 or MaxPayout'],
+  ]}
+/>
 
 ## 使用例
 

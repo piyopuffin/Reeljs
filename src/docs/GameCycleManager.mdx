@@ -1,4 +1,6 @@
 import { Meta } from '@storybook/blocks';
+import { Mermaid } from './components/Mermaid';
+import { Table } from './components/Table';
 
 <Meta title="Docs (EN)/Game Cycle Manager" />
 
@@ -8,7 +10,7 @@ import { Meta } from '@storybook/blocks';
 
 ## Phase Flow
 
-```mermaid
+<Mermaid chart={`
 stateDiagram-v2
     [*] --> BET
     BET --> LEVER_ON
@@ -26,21 +28,24 @@ stateDiagram-v2
     COUNTER_UPDATE --> WAITING
     WAITING --> BET : Normal
     WAITING --> LEVER_ON : Replay (skip BET)
-```
+`} />
 
 ## Phase Responsibilities
 
-| Phase | Module Called |
-|-------|-------------|
-| BET | CreditManager |
-| INTERNAL_LOTTERY | InternalLottery |
-| NOTIFICATION_CHECK | NotificationManager |
-| REEL_SPINNING | SpinEngine |
-| WIN_JUDGE | Payline Evaluator |
-| PAYOUT | CreditManager |
-| MODE_TRANSITION | GameModeManager |
-| ZONE_UPDATE | ZoneManager |
-| COUNTER_UPDATE | SpinCounter |
+<Table
+  headers={['Phase', 'Module Called']}
+  rows={[
+    ['BET', 'CreditManager'],
+    ['INTERNAL_LOTTERY', 'InternalLottery'],
+    ['NOTIFICATION_CHECK', 'NotificationManager'],
+    ['REEL_SPINNING', 'SpinEngine'],
+    ['WIN_JUDGE', 'Payline Evaluator'],
+    ['PAYOUT', 'CreditManager'],
+    ['MODE_TRANSITION', 'GameModeManager'],
+    ['ZONE_UPDATE', 'ZoneManager'],
+    ['COUNTER_UPDATE', 'SpinCounter'],
+  ]}
+/>
 
 ## Usage
 

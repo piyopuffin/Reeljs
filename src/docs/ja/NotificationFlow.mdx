@@ -1,29 +1,33 @@
 import { Meta } from '@storybook/blocks';
+import { Mermaid } from '../components/Mermaid';
+import { Table } from '../components/Table';
 
 <Meta title="Docs（日本語）/告知フロー" />
 
 # 告知フロー
 
-`NotificationManager` は当選告知のタイミング判定を行います。**ロジックとイベント発火のみ**を担当し、演出（UI/アニメーション/サウンド）は開発者に委ねます。
+`NotificationManager` は当選告知のタイミング判定を行います。**ロジックとイベント発火のみ**を担当します。
 
 ## 告知タイプ
 
-| タイプ | タイミング | 説明 |
-|--------|----------|------|
-| `PRE_SPIN` | スピン開始前 | 先告知 |
-| `POST_SPIN` | リール停止後 | 後告知 |
-| `NEXT_BET` | 次ゲームBET時 | 次ゲームBET告知 |
-| `LEVER_ON` | レバーON時 | 自ゲームレバーON告知 |
+<Table
+  headers={['タイプ', 'タイミング', '説明']}
+  rows={[
+    ['PRE_SPIN', 'スピン開始前', '先告知'],
+    ['POST_SPIN', 'リール停止後', '後告知'],
+    ['NEXT_BET', '次ゲームBET時', '次ゲームBET告知'],
+    ['LEVER_ON', 'レバーON時', '自ゲームレバーON告知'],
+  ]}
+/>
 
 ## フロー図
 
-```mermaid
+<Mermaid chart={`
 sequenceDiagram
     participant GCM as GameCycleManager
     participant IL as InternalLottery
     participant NM as NotificationManager
     participant Dev as 開発者コールバック
-
     GCM->>IL: draw(gameMode)
     IL-->>GCM: WinningRole
     GCM->>NM: check(LEVER_ON, winningRole)
@@ -33,11 +37,7 @@ sequenceDiagram
     Note over GCM: リール回転・停止
     GCM->>NM: check(POST_SPIN, winningRole, spinResult)
     NM-->>Dev: onNotification(payload)
-    Note over GCM: 次ゲーム
-    GCM->>NM: check(NEXT_BET)
-    NM-->>Dev: onNotification(payload)
-    NM->>NM: clearPreviousWin()
-```
+`} />
 
 ## 使用例
 

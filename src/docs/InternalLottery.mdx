@@ -1,4 +1,6 @@
 import { Meta } from '@storybook/blocks';
+import { Mermaid } from './components/Mermaid';
+import { Table } from './components/Table';
 
 <Meta title="Docs (EN)/Internal Lottery & Reel Control" />
 
@@ -8,14 +10,14 @@ Reeljs uses a two-stage draw architecture: **InternalLottery** determines the wi
 
 ## Architecture
 
-```mermaid
+<Mermaid chart={`
 flowchart LR
     A[Lever ON] --> B[InternalLottery.draw]
     B --> C{WinningRole}
     C --> D[ReelController.determineStopPosition]
     D --> E[Slip / Reject]
     E --> F[Final Stop Position]
-```
+`} />
 
 ## InternalLottery
 
@@ -31,12 +33,15 @@ flowchart LR
 
 ## WinningRoleType
 
-| Type | Description |
-|------|-------------|
-| `BONUS` | Bonus win (SBB / BB / RB) |
-| `SMALL_WIN` | Small payout (cherry, bell, etc.) |
-| `REPLAY` | Free re-spin |
-| `MISS` | No win |
+<Table
+  headers={['Type', 'Description']}
+  rows={[
+    ['BONUS', 'Bonus win (SBB / BB / RB)'],
+    ['SMALL_WIN', 'Small payout (cherry, bell, etc.)'],
+    ['REPLAY', 'Free re-spin'],
+    ['MISS', 'No win'],
+  ]}
+/>
 
 ## Usage
 
