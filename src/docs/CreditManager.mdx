@@ -1,0 +1,40 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Docs/Credit Manager" />
+
+# Credit Manager
+
+`CreditManager` handles all credit (medal) operations: balance tracking, BET consumption, payout, deposit, and withdrawal.
+
+## Operations Flow
+
+```mermaid
+flowchart TD
+    A[Initial Credit] --> B[Balance]
+    B -->|bet| C[Balance - BET]
+    C -->|payout| D[Balance + Payout]
+    D -->|deposit| E[Balance + Amount]
+    E -->|withdraw| F[Balance - Amount]
+    B -->|Insufficient| G[Error: Cannot BET]
+```
+
+## BetConfig
+
+| Field | Description |
+|-------|-------------|
+| `initialCredit` | Starting balance |
+| `betOptions` | Available BET amounts (e.g. `[1, 2, 3]`) |
+| `defaultBet` | Default BET amount |
+| `historySize` | Number of history entries to keep |
+
+## Usage
+
+```tsx
+import { useCredit } from 'reeljs';
+
+const { balance, currentBet, canSpin, setBet, deposit, withdraw } = useCredit({
+  initialCredit: 1000,
+  betOptions: [1, 2, 3],
+  defaultBet: 3,
+});
+```

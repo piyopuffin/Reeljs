@@ -1,0 +1,51 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Docs/Notification Flow" />
+
+# Notification Flow
+
+`NotificationManager` handles win notification timing. It provides **logic and event firing only** — UI/animation/sound is left to the developer.
+
+## Notification Types
+
+| Type | Timing | Description |
+|------|--------|-------------|
+| `PRE_SPIN` | Before spin starts | Notify win before reels spin |
+| `POST_SPIN` | After reels stop | Notify win after result confirmed |
+| `NEXT_BET` | Next game BET | Notify previous game's win on next BET |
+| `LEVER_ON` | Lever ON | Notify win at lever pull |
+
+## Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant GCM as GameCycleManager
+    participant IL as InternalLottery
+    participant NM as NotificationManager
+    participant Dev as Developer Callback
+
+    GCM->>IL: draw(gameMode)
+    IL-->>GCM: WinningRole
+    GCM->>NM: check(LEVER_ON, winningRole)
+    NM-->>Dev: onNotification(payload)
+    GCM->>NM: check(PRE_SPIN, winningRole)
+    NM-->>Dev: onNotification(payload)
+    Note over GCM: Reels spin & stop
+    GCM->>NM: check(POST_SPIN, winningRole, spinResult)
+    NM-->>Dev: onNotification(payload)
+    Note over GCM: Next game
+    GCM->>NM: check(NEXT_BET)
+    NM-->>Dev: onNotification(payload)
+    NM->>NM: clearPreviousWin()
+```
+
+## Usage
+
+```tsx
+import { useNotification } from 'reeljs';
+
+const { status, lastPayload, acknowledgeNotification } = useNotification({
+  enabledTypes: { PRE_SPIN: true, POST_SPIN: true },
+  targetRoleTypes: ['BONUS'],
+});
+```

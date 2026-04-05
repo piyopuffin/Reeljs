@@ -1,0 +1,34 @@
+node_modules/
+.vscode
+.CLAUDE/
+.cursor/
+.kiro/
+.codex/
+*.log
+.ai_context/
+.idea
+Icon
+/tmp
+/package-lock.json
+/npm-debug.log
+/yarn-error.log
+/.yarn
+
+#Mac OS
+.DS_Store
+__MACOSX/
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk

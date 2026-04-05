@@ -1,0 +1,51 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Docs/Game Cycle Manager" />
+
+# Game Cycle Manager
+
+`GameCycleManager` orchestrates the full lifecycle of a single game round through 14 phases.
+
+## Phase Flow
+
+```mermaid
+stateDiagram-v2
+    [*] --> BET
+    BET --> LEVER_ON
+    LEVER_ON --> INTERNAL_LOTTERY
+    INTERNAL_LOTTERY --> NOTIFICATION_CHECK
+    NOTIFICATION_CHECK --> REEL_SPINNING
+    REEL_SPINNING --> STOP_OPERATION
+    STOP_OPERATION --> REEL_STOPPED
+    REEL_STOPPED --> RESULT_CONFIRMED
+    RESULT_CONFIRMED --> WIN_JUDGE
+    WIN_JUDGE --> PAYOUT
+    PAYOUT --> MODE_TRANSITION
+    MODE_TRANSITION --> ZONE_UPDATE
+    ZONE_UPDATE --> COUNTER_UPDATE
+    COUNTER_UPDATE --> WAITING
+    WAITING --> BET : Normal
+    WAITING --> LEVER_ON : Replay (skip BET)
+```
+
+## Phase Responsibilities
+
+| Phase | Module Called |
+|-------|-------------|
+| BET | CreditManager |
+| INTERNAL_LOTTERY | InternalLottery |
+| NOTIFICATION_CHECK | NotificationManager |
+| REEL_SPINNING | SpinEngine |
+| WIN_JUDGE | Payline Evaluator |
+| PAYOUT | CreditManager |
+| MODE_TRANSITION | GameModeManager |
+| ZONE_UPDATE | ZoneManager |
+| COUNTER_UPDATE | SpinCounter |
+
+## Usage
+
+```tsx
+import { useGameCycle } from 'reeljs';
+
+const { currentPhase, isReplay, startCycle } = useGameCycle(config);
+```

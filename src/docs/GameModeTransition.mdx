@@ -1,0 +1,44 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Docs/Game Mode Transition" />
+
+# Game Mode Transition
+
+Reeljs manages four game modes via `GameModeManager`: **Normal**, **Chance**, **Bonus**, and **BT** (Bonus Trigger).
+
+## Transition Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> Normal
+    Normal --> Chance : Chance transition condition met
+    Normal --> Bonus : Bonus win (InternalLottery)
+    Chance --> BT : WinPattern matched
+    Chance --> Normal : Max spins / MaxPayout reached
+    Bonus --> Normal : BIG_BONUS / REG_BONUS ended
+    Bonus --> BT : SUPER_BIG_BONUS ended
+    BT --> Bonus : WinPattern matched (SUPER_BIG_BONUS re-entry)
+    BT --> Normal : Max spins / MaxPayout reached
+```
+
+## Mode Overview
+
+| Mode | Entry Condition | Exit Condition |
+|------|----------------|----------------|
+| Normal | Game start / Bonus end | Chance or Bonus triggered |
+| Chance | `normalToChance` probability | WinPattern → BT, or max spins |
+| Bonus | InternalLottery BONUS win | Max spins or MaxPayout |
+| BT | SUPER_BIG_BONUS end / Chance WinPattern | Max spins or MaxPayout |
+
+## Usage
+
+```tsx
+import { useGameMode } from 'reeljs';
+
+const { currentMode, currentBonusType, remainingSpins } = useGameMode({
+  transitionConfig: { normalToChance: 0.02, chanceTobt: 0.3, btToSuperBigBonus: 0.1 },
+  bonusConfigs: { /* ... */ },
+  btConfig: { maxSpins: 50, maxPayout: 500, winPatterns: [] },
+  chanceConfig: { maxSpins: 20, maxPayout: 200, winPatterns: [] },
+});
+```
