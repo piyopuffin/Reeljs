@@ -1,0 +1,71 @@
+/* Reeljs Default Styles
+ *
+ * Import this file to apply default styling:
+ *   import 'reeljs/styles.css';
+ *
+ * Or skip this import to use Reeljs as a headless UI library
+ * and apply your own styles via className / style props.
+ */
+
+/* ── Reel ── */
+.reeljs-reel {
+  display: inline-block;
+  overflow: hidden;
+  position: relative;
+  width: 80px;
+  border: 1px solid #ccc;
+  background: #1a1a2e;
+}
+
+.reeljs-reel__track {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Animation is handled inline via <style> in the component for dynamic strip height */
+
+/* ── Symbol ── */
+.reeljs-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e0e0e0;
+}
+
+.reeljs-symbol--highlighted {
+  background: rgba(255, 215, 0, 0.3);
+  color: #ffd700;
+}
+
+/* ── SlotMachine ── */
+.reeljs-slot-machine__reels {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.reeljs-slot-machine__buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+/* ── StopButton ── */
+.reeljs-stop-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  background: #3498db;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.reeljs-stop-button:disabled,
+.reeljs-stop-button--disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}

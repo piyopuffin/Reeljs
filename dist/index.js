@@ -1,49 +1,85 @@
-import { useCallback, useState, useRef, useEffect } from 'react';
-import { jsx, jsxs } from 'react/jsx-runtime';
+import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import { jsxs, jsx } from 'react/jsx-runtime';
 
 // src/components/SlotMachine.tsx
-function Symbol({
-  symbolId,
-  renderSymbol,
-  highlighted = false,
-  className
-}) {
-  const classNames = [
-    "reeljs-symbol",
-    highlighted ? "reeljs-symbol--highlighted" : "",
-    className ?? ""
-  ].filter(Boolean).join(" ");
-  return /* @__PURE__ */ jsx("div", { className: classNames, "data-symbol-id": symbolId, children: renderSymbol ? renderSymbol(symbolId) : /* @__PURE__ */ jsx("span", { children: symbolId }) });
-}
 function Reel({
   symbols,
   spinning,
   stopPosition = 0,
   renderSymbol,
   rowCount = 3,
+  symbolHeight = 60,
+  spinDuration = 0.6,
+  direction = "down",
   className,
   style
 }) {
-  const classNames = [
+  const viewHeight = rowCount * symbolHeight;
+  const stripLen = symbols.length;
+  const oneLoopPx = stripLen * symbolHeight;
+  const items = useMemo(() => {
+    if (stripLen === 0) return [];
+    return [...symbols, ...symbols];
+  }, [symbols, stripLen]);
+  const cls = [
     "reeljs-reel",
     spinning ? "reeljs-reel--spinning" : "",
     className ?? ""
   ].filter(Boolean).join(" ");
-  const visibleSymbols = [];
-  if (symbols.length > 0) {
-    for (let i = 0; i < rowCount; i++) {
-      const idx = (stopPosition + i) % symbols.length;
-      visibleSymbols.push(symbols[idx]);
-    }
-  }
-  return /* @__PURE__ */ jsx("div", { className: classNames, style, "data-spinning": spinning, children: /* @__PURE__ */ jsx("div", { className: "reeljs-reel__track", children: visibleSymbols.map((symbolId, i) => /* @__PURE__ */ jsx(
-    Symbol,
+  const animId = `rj-scroll-${stripLen}`;
+  const stopOffset = -(stopPosition * symbolHeight);
+  const trackStyle = spinning ? {
+    animation: `${animId} ${spinDuration}s linear infinite`,
+    willChange: "transform"
+  } : {
+    transform: `translateY(${stopOffset}px)`,
+    transition: "none"
+  };
+  return /* @__PURE__ */ jsxs(
+    "div",
     {
-      symbolId,
-      renderSymbol
-    },
-    `${i}-${symbolId}`
-  )) }) });
+      className: cls,
+      style: { height: viewHeight, overflow: "hidden", position: "relative", ...style },
+      "data-spinning": spinning,
+      children: [
+        spinning && /* @__PURE__ */ jsx("style", { children: `
+@keyframes ${animId} {
+  from { transform: translateY(${direction === "down" ? -oneLoopPx : 0}px); }
+  to   { transform: translateY(${direction === "down" ? 0 : -oneLoopPx}px); }
+}
+        ` }),
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: "reeljs-reel__track",
+            style: {
+              display: "flex",
+              flexDirection: "column",
+              ...trackStyle
+            },
+            children: items.map((sym, i) => /* @__PURE__ */ jsx(
+              "div",
+              {
+                style: {
+                  height: symbolHeight,
+                  lineHeight: `${symbolHeight}px`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 24,
+                  color: "#e0e0e0",
+                  boxSizing: "border-box",
+                  flexShrink: 0
+                },
+                children: renderSymbol ? renderSymbol(sym) : /* @__PURE__ */ jsx("span", { children: sym })
+              },
+              i
+            ))
+          }
+        )
+      ]
+    }
+  );
 }
 function StopButton({
   reelIndex,
@@ -94,15 +130,25 @@ var AnimationController = class {
     this.config = { ...DEFAULT_ANIMATION_CONFIG, ...config };
     this.reelCount = reelCount;
   }
-  /** Get current animation phase */
+  /**
+   * 現在のアニメーションフェーズを取得する。
+   *
+   * @returns 現在のAnimationPhase
+   */
   getPhase() {
     return this.phase;
   }
-  /** Get resolved config */
+  /**
+   * 解決済みのアニメーション設定を取得する。
+   *
+   * @returns デフォルト値が適用された完全なAnimationConfig
+   */
   getConfig() {
     return { ...this.config };
   }
-  /** Start spin animation (acceleration → constant speed) */
+  /**
+   * スピンアニメーションを開始する（加速 → 定速回転）。
+   */
   startSpin() {
     this.stoppedReels.clear();
     this.phase = "accelerating";
@@ -112,7 +158,13 @@ var AnimationController = class {
       }
     }, this.config.accelerationDuration);
   }
-  /** Stop a specific reel with deceleration */
+  /**
+   * 指定リールを減速停止する。全リール停止時にonSpinCompleteコールバックを発火する。
+   *
+   * @param reelIndex - リールインデックス
+   * @param _position - 停止位置
+   * @returns 停止完了時に解決するPromise
+   */
   async stopReel(reelIndex, _position) {
     const delay = this.config.stopDelays[reelIndex] ?? 0;
     return new Promise((resolve) => {
@@ -129,11 +181,19 @@ var AnimationController = class {
       }, delay);
     });
   }
-  /** Register spin complete callback */
+  /**
+   * 全リール停止完了時のコールバックを登録する。
+   *
+   * @param callback - 完了時に呼び出されるコールバック
+   */
   onSpinComplete(callback) {
     this.spinCompleteCallbacks.push(callback);
   }
-  /** Remove spin complete callback */
+  /**
+   * 全リール停止完了時のコールバックを解除する。
+   *
+   * @param callback - 解除するコールバック
+   */
   offSpinComplete(callback) {
     this.spinCompleteCallbacks = this.spinCompleteCallbacks.filter((cb) => cb !== callback);
   }
@@ -209,6 +269,19 @@ function SlotMachine({
     )) })
   ] });
 }
+function Symbol({
+  symbolId,
+  renderSymbol,
+  highlighted = false,
+  className
+}) {
+  const classNames = [
+    "reeljs-symbol",
+    highlighted ? "reeljs-symbol--highlighted" : "",
+    className ?? ""
+  ].filter(Boolean).join(" ");
+  return /* @__PURE__ */ jsx("div", { className: classNames, "data-symbol-id": symbolId, children: renderSymbol ? renderSymbol(symbolId) : /* @__PURE__ */ jsx("span", { children: symbolId }) });
+}
 
 // src/core/reel-controller.ts
 var ReelController = class {
@@ -223,10 +296,14 @@ var ReelController = class {
     this.randomFn = config.randomFn ?? Math.random;
   }
   /**
-   * 停止位置決定
-   *
-   * 当選役のパターンに基づいて引き込み（Slip）・蹴飛ばし（Reject）を適用し、
+   * 停止位置決定。当選役のパターンに基づいて引き込み（Slip）・蹴飛ばし（Reject）を適用し、
    * 最終停止位置を決定する。
+   *
+   * @param reelIndex - リールインデックス（0始まり）
+   * @param winningRole - 内部当選役
+   * @param stopTiming - プレイヤーの停止タイミング
+   * @returns 停止結果
+   * @throws リールインデックスまたはStopTimingが範囲外の場合
    */
   determineStopPosition(reelIndex, winningRole, stopTiming) {
     const strip = this.reelStrips[reelIndex];
@@ -275,7 +352,10 @@ var ReelController = class {
     return result;
   }
   /**
-   * AutoStop実行 — 全リールをランダムタイミングで停止
+   * AutoStop実行。全リールをランダムタイミングで停止する。
+   *
+   * @param winningRole - 内部当選役
+   * @returns 全リールの停止結果
    */
   autoStopAll(winningRole) {
     const results = [];
@@ -287,7 +367,9 @@ var ReelController = class {
     return results;
   }
   /**
-   * 停止コールバック登録
+   * 停止コールバック登録。リール停止時にStopResultを受け取るコールバックを登録する。
+   *
+   * @param callback - 停止結果を受け取るコールバック関数
    */
   onStop(callback) {
     this.stopCallbacks.push(callback);
@@ -443,10 +525,13 @@ var SpinEngine = class {
     }
   }
   /**
-   * 統合スピン実行
-   *
+   * 統合スピン実行。
    * winningRole が渡された場合は ReelController で出目制御を行い、
    * 渡されていない場合は重み付けランダム抽選にフォールバックする。
+   *
+   * @param winningRole - 内部当選役（省略時はランダムフォールバック）
+   * @param stopTimings - 各リールのStopTiming配列（省略時はランダム生成）
+   * @returns スピン結果
    */
   spin(winningRole, stopTimings) {
     const role = winningRole ?? MISS_ROLE;
@@ -477,7 +562,12 @@ var SpinEngine = class {
     return result;
   }
   /**
-   * InternalLottery のみ実行
+   * InternalLottery のみ実行し、当選役を決定する。
+   *
+   * @param gameMode - 現在のゲームモード
+   * @param difficulty - 設定段階（オプション）
+   * @returns 当選役
+   * @throws InternalLotteryが未設定の場合
    */
   lottery(gameMode, difficulty) {
     if (!this.internalLottery) {
@@ -486,7 +576,11 @@ var SpinEngine = class {
     return this.internalLottery.draw(gameMode, difficulty);
   }
   /**
-   * ReelController のみ実行
+   * ReelController のみ実行し、各リールの停止位置を決定する。
+   *
+   * @param winningRole - 内部当選役
+   * @param stopTimings - 各リールのStopTiming配列（省略時はランダム生成）
+   * @returns 各リールの停止結果
    */
   controlReels(winningRole, stopTimings) {
     const reelCount = this.reelConfigs.length;
@@ -500,10 +594,11 @@ var SpinEngine = class {
     return results;
   }
   /**
-   * Payline 評価のみ実行
-   *
-   * 横・斜め・V字等のカスタムパターンに対応。
+   * Payline 評価のみ実行。横・斜め・V字等のカスタムパターンに対応。
    * 複数 Payline 同時当選時は全配当を返却する。
+   *
+   * @param grid - シンボルグリッド（grid[row][reel]）
+   * @returns 当選ライン結果の配列
    */
   evaluatePaylines(grid) {
     const results = [];
@@ -836,8 +931,7 @@ var GameCycleManager = class {
     return this._isReplay;
   }
   /**
-   * ゲームサイクル開始
-   * リプレイ時はBETをスキップしてLEVER_ONから開始する
+   * ゲームサイクル開始。リプレイ時はBETをスキップしてLEVER_ONから開始する。
    */
   startCycle() {
     this._stopTimings = [];
@@ -849,13 +943,18 @@ var GameCycleManager = class {
     }
   }
   /**
-   * フェーズ遷移コールバック登録
+   * フェーズ遷移コールバック登録。フェーズ遷移時に遷移元・遷移先を受け取るコールバックを登録する。
+   *
+   * @param callback - 遷移元フェーズと遷移先フェーズを受け取るコールバック
    */
   onPhaseChange(callback) {
     this._phaseChangeCallbacks.push(callback);
   }
   /**
-   * ストップ操作通知
+   * ストップ操作通知。プレイヤーのストップボタン押下を記録する。
+   *
+   * @param reelIndex - リールインデックス
+   * @param timing - 停止タイミング
    */
   notifyStop(reelIndex, timing) {
     this._stopTimings[reelIndex] = timing;
@@ -1397,7 +1496,9 @@ var ZoneManager = class {
     };
   }
   /**
-   * ゾーン更新: SpinResult に基づいてゲーム数・差枚数を更新し、ゾーン終了判定を行う
+   * ゾーン更新。SpinResult に基づいてゲーム数・差枚数を更新し、ゾーン終了判定を行う。
+   *
+   * @param spinResult - スピン結果
    */
   update(spinResult) {
     this._state.gamesPlayed += 1;
@@ -1408,7 +1509,9 @@ var ZoneManager = class {
     }
   }
   /**
-   * ゾーン遷移コールバック登録
+   * ゾーン遷移コールバック登録。ゾーン遷移時に遷移元・遷移先を受け取るコールバックを登録する。
+   *
+   * @param callback - 遷移元ゾーンと遷移先ゾーンを受け取るコールバック
    */
   onZoneChange(callback) {
     this._onZoneChangeCallbacks.push(callback);
@@ -1807,20 +1910,37 @@ var SpinCounter = class {
       this.counters.set(config.name, 0);
     }
   }
-  /** Get counter value by name. Returns 0 for unknown counters. */
+  /**
+   * カウンター値を名前で取得する。未知のカウンターの場合は0を返す。
+   *
+   * @param name - カウンター名
+   * @returns カウンター値
+   */
   get(name) {
     return this.counters.get(name) ?? 0;
   }
-  /** Increment counter by name. Creates counter if it doesn't exist. */
+  /**
+   * カウンターをインクリメントする。存在しないカウンターの場合は新規作成する。
+   *
+   * @param name - カウンター名
+   */
   increment(name) {
     const current = this.counters.get(name) ?? 0;
     this.counters.set(name, current + 1);
   }
-  /** Reset counter to 0 by name. */
+  /**
+   * カウンターを0にリセットする。
+   *
+   * @param name - カウンター名
+   */
   reset(name) {
     this.counters.set(name, 0);
   }
-  /** Get all counters as a record. */
+  /**
+   * 全カウンターの値をレコードとして取得する。
+   *
+   * @returns カウンター名と値のレコード
+   */
   getAll() {
     const result = {};
     for (const [name, value] of this.counters) {
@@ -1828,11 +1948,21 @@ var SpinCounter = class {
     }
     return result;
   }
-  /** Get the config for a specific counter. */
+  /**
+   * 指定カウンターの設定を取得する。
+   *
+   * @param name - カウンター名
+   * @returns カウンター設定。未定義の場合はundefined
+   */
   getConfig(name) {
     return this.configs.get(name);
   }
-  /** Check if a reset condition matches any counter and reset those counters. */
+  /**
+   * リセット条件に一致するカウンターをリセットする。
+   *
+   * @param condition - リセット条件文字列
+   * @returns リセットされたカウンター名の配列
+   */
   checkResetCondition(condition) {
     const resetCounters = [];
     for (const [name, config] of this.configs) {
@@ -1887,8 +2017,11 @@ var ThresholdTrigger = class {
     }
   }
   /**
-   * Check if a counter value has reached its threshold.
-   * If threshold is reached, invokes callbacks and returns true.
+   * カウンター値が閾値に到達したかチェックする。到達時はコールバックを発火しtrueを返す。
+   *
+   * @param counterName - カウンター名
+   * @param value - 現在のカウンター値
+   * @returns 閾値に到達した場合true
    */
   check(counterName, value) {
     const threshold = this.resolvedThresholds.get(counterName);
@@ -1904,13 +2037,18 @@ var ThresholdTrigger = class {
     }
     return false;
   }
-  /** Register a callback for threshold reached events. */
+  /**
+   * 閾値到達時のコールバックを登録する。
+   *
+   * @param callback - カウンター名、到達値、アクション名を受け取るコールバック
+   */
   onThresholdReached(callback) {
     this.callbacks.push(callback);
   }
   /**
-   * Re-roll the threshold for a counter (used when ThresholdRange is configured).
-   * For fixed thresholds, this is a no-op (threshold stays the same).
+   * 閾値を再抽選する（ThresholdRange設定時）。固定閾値の場合は変更なし。
+   *
+   * @param counterName - カウンター名
    */
   reroll(counterName) {
     const config = this.configs.get(counterName);
@@ -1922,11 +2060,20 @@ var ThresholdTrigger = class {
       resolveThreshold(config.threshold, this.randomFn)
     );
   }
-  /** Get the current resolved threshold for a counter. */
+  /**
+   * 指定カウンターの現在の解決済み閾値を取得する。
+   *
+   * @param counterName - カウンター名
+   * @returns 解決済み閾値。未定義の場合はundefined
+   */
   getThreshold(counterName) {
     return this.resolvedThresholds.get(counterName);
   }
-  /** Get all resolved thresholds as a record. */
+  /**
+   * 全カウンターの解決済み閾値をレコードとして取得する。
+   *
+   * @returns カウンター名と閾値のレコード
+   */
   getAllThresholds() {
     const result = {};
     for (const [name, value] of this.resolvedThresholds) {
@@ -1990,14 +2137,23 @@ var DifficultyPreset = class {
   get currentConfig() {
     return this.levels[this._currentLevel];
   }
-  /** 設定段階変更 */
+  /**
+   * 設定段階変更。指定した段階のDifficultyConfigに切り替える。
+   *
+   * @param level - 設定段階番号
+   * @throws 未定義の設定段階が指定された場合
+   */
   setDifficulty(level) {
     if (!(level in this.levels)) {
       throw new Error(`Invalid difficulty level: ${level}. Available levels: ${Object.keys(this.levels).join(", ")}`);
     }
     this._currentLevel = level;
   }
-  /** 利用可能な設定段階一覧 */
+  /**
+   * 利用可能な設定段階一覧を取得する。
+   *
+   * @returns 設定段階番号の配列
+   */
   getAvailableLevels() {
     return Object.keys(this.levels).map(Number);
   }
@@ -2208,7 +2364,9 @@ var InternalLottery = class {
     return MISS_ROLE2;
   }
   /**
-   * CarryOverFlag を設定する
+   * CarryOverFlag を設定する。取りこぼし時にボーナス当選状態を持ち越す。
+   *
+   * @param winningRole - 持ち越す当選役
    */
   setCarryOver(winningRole) {
     this.carryOver = {
@@ -2217,7 +2375,9 @@ var InternalLottery = class {
     };
   }
   /**
-   * 現在の CarryOverFlag を取得する
+   * 現在の CarryOverFlag を取得する。
+   *
+   * @returns 持ち越しフラグ。持ち越し中でない場合はnull
    */
   getCarryOverFlag() {
     return this.carryOver;
@@ -2307,6 +2467,10 @@ var EventEmitter = class {
   /**
    * イベントを発火し、登録済みの全リスナーにペイロードを配信する。
    * 購読者がいない場合は何もしない。
+   *
+   * @typeParam T - ペイロードの型
+   * @param event - イベント名
+   * @param payload - イベントペイロード（省略可）
    */
   emit(event, payload) {
     const set = this.listeners.get(event);
@@ -2317,6 +2481,10 @@ var EventEmitter = class {
   }
   /**
    * イベントを購読する。
+   *
+   * @typeParam T - ペイロードの型
+   * @param event - イベント名
+   * @param listener - イベントリスナー関数
    * @returns 購読解除関数
    */
   on(event, listener) {
@@ -2333,6 +2501,9 @@ var EventEmitter = class {
   }
   /**
    * イベントの購読を解除する。
+   *
+   * @param event - イベント名
+   * @param listener - 解除するリスナー関数
    */
   off(event, listener) {
     const set = this.listeners.get(event);
@@ -2362,14 +2533,19 @@ var REQUIRED_FIELDS = [
 ];
 var ConfigSerializer = {
   /**
-   * GameConfig を JSON 文字列にシリアライズする
+   * GameConfig を JSON 文字列にシリアライズする。
+   *
+   * @param config - シリアライズ対象のGameConfig
+   * @returns JSON文字列
    */
   serialize(config) {
     return JSON.stringify(config);
   },
   /**
-   * JSON 文字列を GameConfig にデシリアライズする
+   * JSON 文字列を GameConfig にデシリアライズする。
    *
+   * @param json - デシリアライズ対象のJSON文字列
+   * @returns パースされたGameConfig
    * @throws 不正な JSON の場合はパースエラー
    * @throws 必須フィールド欠落の場合はバリデーションエラー
    */
@@ -2390,7 +2566,10 @@ var ConfigSerializer = {
     return parsed;
   },
   /**
-   * 値が有効な GameConfig かどうかを検証する型ガード
+   * 値が有効な GameConfig かどうかを検証する型ガード。
+   *
+   * @param config - 検証対象の値
+   * @returns GameConfigとして有効な場合true
    */
   validate(config) {
     if (config === null || typeof config !== "object") {
