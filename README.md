@@ -1,5 +1,7 @@
 # Reeljs
 
+[🇯🇵 日本語版はこちら](./README.ja.md)
+
 A React library for building slot machine games with TypeScript.
 
 ## Installation

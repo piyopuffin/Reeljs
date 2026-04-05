@@ -1,0 +1,40 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Docs（日本語）/クレジット管理" />
+
+# クレジット管理
+
+`CreditManager` はクレジット（メダル）の残高管理、BET消費、配当加算、投入・引き出しを担当します。
+
+## 操作フロー
+
+```mermaid
+flowchart TD
+    A[初期クレジット] --> B[残高]
+    B -->|bet| C[残高 - BET額]
+    C -->|payout| D[残高 + 配当]
+    D -->|deposit| E[残高 + 投入額]
+    E -->|withdraw| F[残高 - 引き出し額]
+    B -->|残高不足| G[エラー: BET不可]
+```
+
+## BetConfig
+
+| フィールド | 説明 |
+|-----------|------|
+| `initialCredit` | 初期クレジット額 |
+| `betOptions` | BET額のバリエーション（例: `[1, 2, 3]`） |
+| `defaultBet` | デフォルトBET額 |
+| `historySize` | 変動履歴の保持件数 |
+
+## 使用例
+
+```tsx
+import { useCredit } from 'reeljs';
+
+const { balance, currentBet, canSpin, setBet, deposit, withdraw } = useCredit({
+  initialCredit: 1000,
+  betOptions: [1, 2, 3],
+  defaultBet: 3,
+});
+```

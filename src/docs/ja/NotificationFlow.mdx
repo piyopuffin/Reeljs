@@ -1,28 +1,28 @@
 import { Meta } from '@storybook/blocks';
 
-<Meta title="Docs (EN)/Notification Flow" />
+<Meta title="Docs（日本語）/告知フロー" />
 
-# Notification Flow
+# 告知フロー
 
-`NotificationManager` handles win notification timing. It provides **logic and event firing only** — UI/animation/sound is left to the developer.
+`NotificationManager` は当選告知のタイミング判定を行います。**ロジックとイベント発火のみ**を担当し、演出（UI/アニメーション/サウンド）は開発者に委ねます。
 
-## Notification Types
+## 告知タイプ
 
-| Type | Timing | Description |
-|------|--------|-------------|
-| `PRE_SPIN` | Before spin starts | Notify win before reels spin |
-| `POST_SPIN` | After reels stop | Notify win after result confirmed |
-| `NEXT_BET` | Next game BET | Notify previous game's win on next BET |
-| `LEVER_ON` | Lever ON | Notify win at lever pull |
+| タイプ | タイミング | 説明 |
+|--------|----------|------|
+| `PRE_SPIN` | スピン開始前 | 先告知 |
+| `POST_SPIN` | リール停止後 | 後告知 |
+| `NEXT_BET` | 次ゲームBET時 | 次ゲームBET告知 |
+| `LEVER_ON` | レバーON時 | 自ゲームレバーON告知 |
 
-## Flow Diagram
+## フロー図
 
 ```mermaid
 sequenceDiagram
     participant GCM as GameCycleManager
     participant IL as InternalLottery
     participant NM as NotificationManager
-    participant Dev as Developer Callback
+    participant Dev as 開発者コールバック
 
     GCM->>IL: draw(gameMode)
     IL-->>GCM: WinningRole
@@ -30,16 +30,16 @@ sequenceDiagram
     NM-->>Dev: onNotification(payload)
     GCM->>NM: check(PRE_SPIN, winningRole)
     NM-->>Dev: onNotification(payload)
-    Note over GCM: Reels spin & stop
+    Note over GCM: リール回転・停止
     GCM->>NM: check(POST_SPIN, winningRole, spinResult)
     NM-->>Dev: onNotification(payload)
-    Note over GCM: Next game
+    Note over GCM: 次ゲーム
     GCM->>NM: check(NEXT_BET)
     NM-->>Dev: onNotification(payload)
     NM->>NM: clearPreviousWin()
 ```
 
-## Usage
+## 使用例
 
 ```tsx
 import { useNotification } from 'reeljs';

@@ -1,12 +1,12 @@
 import { Meta } from '@storybook/blocks';
 
-<Meta title="Docs (EN)/Game Cycle Manager" />
+<Meta title="Docs（日本語）/ゲームサイクル管理" />
 
-# Game Cycle Manager
+# ゲームサイクル管理
 
-`GameCycleManager` orchestrates the full lifecycle of a single game round through 14 phases.
+`GameCycleManager` は1ゲームのライフサイクルを14フェーズで管理するオーケストレーターです。
 
-## Phase Flow
+## フェーズフロー
 
 ```mermaid
 stateDiagram-v2
@@ -24,25 +24,25 @@ stateDiagram-v2
     MODE_TRANSITION --> ZONE_UPDATE
     ZONE_UPDATE --> COUNTER_UPDATE
     COUNTER_UPDATE --> WAITING
-    WAITING --> BET : Normal
-    WAITING --> LEVER_ON : Replay (skip BET)
+    WAITING --> BET : 通常
+    WAITING --> LEVER_ON : リプレイ（BETスキップ）
 ```
 
-## Phase Responsibilities
+## 各フェーズの担当モジュール
 
-| Phase | Module Called |
-|-------|-------------|
+| フェーズ | 呼び出すモジュール |
+|---------|-----------------|
 | BET | CreditManager |
 | INTERNAL_LOTTERY | InternalLottery |
 | NOTIFICATION_CHECK | NotificationManager |
 | REEL_SPINNING | SpinEngine |
-| WIN_JUDGE | Payline Evaluator |
+| WIN_JUDGE | Payline評価 |
 | PAYOUT | CreditManager |
 | MODE_TRANSITION | GameModeManager |
 | ZONE_UPDATE | ZoneManager |
 | COUNTER_UPDATE | SpinCounter |
 
-## Usage
+## 使用例
 
 ```tsx
 import { useGameCycle } from 'reeljs';
