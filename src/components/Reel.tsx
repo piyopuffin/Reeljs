@@ -1,6 +1,9 @@
 import React from 'react';
 import { Symbol as SymbolComponent } from './Symbol';
 
+/** リールの回転方向 */
+export type ReelDirection = 'down' | 'up';
+
 /**
  * 個別リールコンポーネントのprops。
  *
@@ -22,6 +25,8 @@ export interface ReelProps<S extends string = string> {
   renderSymbol?: (symbolId: S) => React.ReactNode;
   /** 表示行数（デフォルト: 3） */
   rowCount?: number;
+  /** 回転方向（デフォルト: 'down' — 上から下へ流れる） */
+  direction?: ReelDirection;
   /** CSSクラス名 */
   className?: string;
   /** インラインスタイル */
@@ -51,30 +56,46 @@ export function Reel<S extends string = string>({
   stopPosition = 0,
   renderSymbol,
   rowCount = 3,
+  direction = 'down',
   className,
   style,
 }: ReelProps<S>): React.ReactElement {
   const classNames = [
     'reeljs-reel',
     spinning ? 'reeljs-reel--spinning' : '',
+    spinning && direction === 'up' ? 'reeljs-reel--spin-up' : '',
     className ?? '',
   ]
     .filter(Boolean)
     .join(' ');
 
-  // Get visible symbols based on stop position
-  const visibleSymbols: S[] = [];
+  // When spinning, show a longer strip of symbols for the scroll effect
+  const displaySymbols: S[] = [];
   if (symbols.length > 0) {
-    for (let i = 0; i < rowCount; i++) {
-      const idx = (stopPosition + i) % symbols.length;
-      visibleSymbols.push(symbols[idx]);
+    if (spinning) {
+      // Show extra symbols for smooth scrolling illusion
+      for (let i = 0; i < rowCount + 2; i++) {
+        const idx = (stopPosition + i) % symbols.length;
+        displaySymbols.push(symbols[idx]);
+      }
+    } else {
+      for (let i = 0; i < rowCount; i++) {
+        const idx = (stopPosition + i) % symbols.length;
+        displaySymbols.push(symbols[idx]);
+      }
     }
   }
 
+  const reelHeight = rowCount * 60;
+
   return (
-    <div className={classNames} style={style} data-spinning={spinning}>
+    <div
+      className={classNames}
+      style={{ height: reelHeight, ...style }}
+      data-spinning={spinning}
+    >
       <div className="reeljs-reel__track">
-        {visibleSymbols.map((symbolId, i) => (
+        {displaySymbols.map((symbolId, i) => (
           <SymbolComponent
             key={`${i}-${symbolId}`}
             symbolId={symbolId}

@@ -1,4 +1,5 @@
 import type { Preview } from '@storybook/react';
+import '../src/styles/reeljs.css';
 
 const preview: Preview = {
   parameters: {

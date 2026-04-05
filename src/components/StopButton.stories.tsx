@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { StopButton } from './StopButton';
-import { fn } from '@storybook/test';
+
+const noopStop = (reelIndex: number, timing: number) => {
+  console.log(`Stop reel ${reelIndex} at timing ${timing}`);
+};
 
 const meta = {
   title: 'Components/StopButton',
@@ -21,7 +24,7 @@ export const Default: Story = {
   args: {
     reelIndex: 0,
     disabled: false,
-    onStop: fn(),
+    onStop: noopStop,
   },
 };
 
@@ -29,7 +32,7 @@ export const Disabled: Story = {
   args: {
     reelIndex: 0,
     disabled: true,
-    onStop: fn(),
+    onStop: noopStop,
   },
 };
 
@@ -37,7 +40,7 @@ export const CustomLabel: Story = {
   args: {
     reelIndex: 1,
     disabled: false,
-    onStop: fn(),
+    onStop: noopStop,
     'aria-label': 'Stop reel 2',
   },
 };

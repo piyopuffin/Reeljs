@@ -2,7 +2,7 @@
 
 // ── UI Components ──
 export { SlotMachine, type SlotMachineProps } from './components/SlotMachine';
-export { Reel, type ReelProps } from './components/Reel';
+export { Reel, type ReelProps, type ReelDirection } from './components/Reel';
 export { Symbol, type SymbolProps } from './components/Symbol';
 export { StopButton, type StopButtonProps } from './components/StopButton';
 
