@@ -5,7 +5,6 @@ export type ReelDirection = 'down' | 'up';
 
 /**
  * 個別リールコンポーネントのprops。
- *
  * @typeParam S - シンボルIDの文字列リテラル型
  */
 export interface ReelProps<S extends string = string> {
@@ -47,20 +46,12 @@ export function Reel<S extends string = string>({
   const stripLen = symbols.length;
   const oneLoopPx = stripLen * symbolHeight;
 
-  // Build symbol list
+  // Always render the full strip x2 (for seamless loop).
+  // Both spinning and stopped use the same DOM — only the style changes.
   const items = useMemo(() => {
     if (stripLen === 0) return [] as S[];
-    if (!spinning) {
-      // Stopped: show rowCount symbols from stopPosition
-      const out: S[] = [];
-      for (let i = 0; i < rowCount; i++) {
-        out.push(symbols[(stopPosition + i) % stripLen]);
-      }
-      return out;
-    }
-    // Spinning: duplicate strip twice for seamless loop
     return [...symbols, ...symbols];
-  }, [symbols, spinning, stopPosition, rowCount, stripLen]);
+  }, [symbols, stripLen]);
 
   const cls = [
     'reeljs-reel',
@@ -68,12 +59,27 @@ export function Reel<S extends string = string>({
     className ?? '',
   ].filter(Boolean).join(' ');
 
-  // Unique animation name to avoid conflicts
   const animId = `rj-scroll-${stripLen}`;
-  const endY = direction === 'down' ? oneLoopPx : -oneLoopPx;
+
+  // When stopped, translate so that stopPosition is at the top of the viewport
+  const stopOffset = -(stopPosition * symbolHeight);
+
+  const trackStyle: React.CSSProperties = spinning
+    ? {
+        animation: `${animId} ${spinDuration}s linear infinite`,
+        willChange: 'transform',
+      }
+    : {
+        transform: `translateY(${stopOffset}px)`,
+        transition: 'none',
+      };
 
   return (
-    <div className={cls} style={{ height: viewHeight, overflow: 'hidden', ...style }} data-spinning={spinning}>
+    <div
+      className={cls}
+      style={{ height: viewHeight, overflow: 'hidden', position: 'relative', ...style }}
+      data-spinning={spinning}
+    >
       {spinning && (
         <style>{`
 @keyframes ${animId} {
@@ -84,19 +90,15 @@ export function Reel<S extends string = string>({
       )}
       <div
         className="reeljs-reel__track"
-        style={spinning ? {
+        style={{
           display: 'flex',
           flexDirection: 'column',
-          animation: `${animId} ${spinDuration}s linear infinite`,
-          willChange: 'transform',
-        } : {
-          display: 'flex',
-          flexDirection: 'column',
+          ...trackStyle,
         }}
       >
         {items.map((sym, i) => (
           <div
-            key={`${spinning ? 's' : 'p'}-${i}`}
+            key={i}
             style={{
               height: symbolHeight,
               lineHeight: `${symbolHeight}px`,
