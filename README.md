@@ -4,10 +4,34 @@ A React library for building slot machine games with TypeScript.
 
 ## Installation
 
+### From npm (not yet available)
+
+> ⚠️ This package has not been published to npm yet.
+
 ```bash
 npm install reeljs
 # or
 yarn add reeljs
+```
+
+### Local development
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/reeljs.git
+cd reeljs
+
+# Install dependencies
+npm install
+
+# Build the library
+npm run build
+
+# Link locally for use in another project
+npm link
+
+# In your project directory
+npm link reeljs
 ```
 
 ## Quick Start
