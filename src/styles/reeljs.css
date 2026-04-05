@@ -20,38 +20,16 @@
 .reeljs-reel__track {
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease-out;
 }
 
-/* Default direction: down (top to bottom, like Japanese pachislot) */
-.reeljs-reel--spinning .reeljs-reel__track {
-  animation: reeljs-spin-down 0.15s linear infinite;
-}
-
-/* Reverse direction: up (bottom to top) */
-.reeljs-reel--spin-up .reeljs-reel__track {
-  animation: reeljs-spin-up 0.15s linear infinite;
-}
-
-@keyframes reeljs-spin-down {
-  0% { transform: translateY(-60px); }
-  100% { transform: translateY(0); }
-}
-
-@keyframes reeljs-spin-up {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-60px); }
-}
+/* Animation is handled inline via <style> in the component for dynamic strip height */
 
 /* ── Symbol ── */
 .reeljs-symbol {
-  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
   color: #e0e0e0;
-  border-bottom: 1px solid #333;
 }
 
 .reeljs-symbol--highlighted {
