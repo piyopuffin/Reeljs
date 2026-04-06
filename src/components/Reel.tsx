@@ -17,7 +17,7 @@ export interface ReelProps<S extends string = string> {
   renderSymbol?: (symbolId: S) => React.ReactNode;
   /** 表示行数（デフォルト: 3） */
   rowCount?: number;
-  /** 1シンボルの高さpx（デフォルト: 60） */
+  /** 1シンボルの高さpx（デフォルト: 40） */
   symbolHeight?: number;
   /** 回転速度 秒/1周（デフォルト: 0.6） */
   spinDuration?: number;
@@ -35,7 +35,7 @@ export function Reel<S extends string = string>({
   stopPosition = 0,
   renderSymbol,
   rowCount = 3,
-  symbolHeight = 60,
+  symbolHeight = 40,
   spinDuration = 0.6,
   direction = 'down',
   className,

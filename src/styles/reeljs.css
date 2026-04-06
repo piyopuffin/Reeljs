@@ -29,12 +29,38 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #e0e0e0;
+  color: #333;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.reeljs-symbol:last-child {
+  border-bottom: none;
 }
 
 .reeljs-symbol--highlighted {
   background: rgba(255, 215, 0, 0.3);
   color: #ffd700;
+}
+
+/*
+ * Symbol spacing customization via CSS custom properties:
+ *
+ *   .reeljs-reel {
+ *     --reeljs-symbol-gap: 4px;
+ *     --reeljs-symbol-padding: 2px 0;
+ *     --reeljs-symbol-border-color: rgba(0,0,0,0.1);
+ *   }
+ */
+.reeljs-reel {
+  --reeljs-symbol-gap: 0px;
+  --reeljs-symbol-padding: 0;
+  --reeljs-symbol-border-color: rgba(0, 0, 0, 0.08);
+}
+
+.reeljs-reel .reeljs-symbol {
+  padding: var(--reeljs-symbol-padding);
+  margin-bottom: var(--reeljs-symbol-gap);
+  border-bottom-color: var(--reeljs-symbol-border-color);
 }
 
 /* ── SlotMachine ── */
@@ -57,15 +83,17 @@
   font-size: 14px;
   font-weight: bold;
   border: none;
-  border-radius: 6px;
-  background: #c81728;
-  color: #fff;
+  border-radius: 20px;
+  background: #f8285c;
+  color: #ffb3c6;
+;
   cursor: pointer;
   transition: opacity 0.2s;
 }
 
 .reeljs-stop-button:disabled,
 .reeljs-stop-button--disabled {
-  opacity: 0.3;
+  background: #852c42;
+  color: #ad3d59;
   cursor: not-allowed;
 }
