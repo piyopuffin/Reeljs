@@ -29,8 +29,59 @@ flowchart TD
     ['betOptions', 'BET額のバリエーション（例: [1, 2, 3]）'],
     ['defaultBet', 'デフォルトBET額'],
     ['historySize', '変動履歴の保持件数'],
+    ['paylinesPerBet', 'BET額ごとの有効Paylineインデックス（オプション）'],
+    ['exclusiveRolesPerBet', '特定BET額でのみ抽選される当選役（オプション）'],
   ]}
 />
+
+## BET連動機能
+
+BET額によってゲームプレイの3つの要素が変化します。
+
+### 1. 配当倍率
+
+PayTableの配当値にBET額が掛けられます。チェリーの配当が10で3BETなら30枚獲得。
+
+```ts
+// SpinEngineがbetAmountを倍率として適用
+engine.spin(winningRole, stopTimings, { betAmount: 3 });
+// 配当 10 × 3 BET = 30枚
+```
+
+### 2. BET額別有効Payline
+
+BET額に応じて有効なPaylineが変わります。1BETは中段のみ、MAX BETで全5ライン有効など。
+
+```ts
+const betConfig: BetConfig = {
+  initialCredit: 1000,
+  betOptions: [1, 2, 3],
+  defaultBet: 3,
+  paylinesPerBet: {
+    1: [1],          // 中段のみ
+    2: [0, 1, 2],    // 横3ライン
+    3: [0, 1, 2, 3, 4], // 全5ライン
+  },
+};
+```
+
+### 3. MAX BET限定当選役
+
+特定の当選役（例: SUPER BIG BONUS）をMAX BET時のみ抽選対象にできます。
+
+```ts
+const betConfig: BetConfig = {
+  initialCredit: 1000,
+  betOptions: [1, 2, 3],
+  defaultBet: 3,
+  exclusiveRolesPerBet: {
+    3: ['super_big_bonus'], // SBBは3BET時のみ抽選
+  },
+};
+
+// InternalLotteryが低BET時に制限対象の当選役を除外
+lottery.draw('Normal', undefined, excludedRoleIds);
+```
 
 ## 使用例
 

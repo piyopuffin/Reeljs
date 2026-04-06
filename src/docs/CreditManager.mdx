@@ -29,8 +29,59 @@ flowchart TD
     ['betOptions', 'Available BET amounts (e.g. [1, 2, 3])'],
     ['defaultBet', 'Default BET amount'],
     ['historySize', 'Number of history entries to keep'],
+    ['paylinesPerBet', 'Active payline indices per BET amount (optional)'],
+    ['exclusiveRolesPerBet', 'Winning roles restricted to specific BET amounts (optional)'],
   ]}
 />
+
+## BET-Linked Features
+
+BET amount affects three aspects of gameplay:
+
+### 1. Payout Multiplier
+
+PayTable payouts are multiplied by the current BET amount. A cherry payout of 10 with 3 BET yields 30 credits.
+
+```ts
+// SpinEngine applies betAmount as multiplier
+engine.spin(winningRole, stopTimings, { betAmount: 3 });
+// payout 10 × 3 BET = 30 credits
+```
+
+### 2. Active Paylines per BET
+
+Different BET amounts can activate different paylines. For example, 1 BET enables only the center line, while MAX BET enables all 5 lines.
+
+```ts
+const betConfig: BetConfig = {
+  initialCredit: 1000,
+  betOptions: [1, 2, 3],
+  defaultBet: 3,
+  paylinesPerBet: {
+    1: [1],          // center line only
+    2: [0, 1, 2],    // 3 horizontal lines
+    3: [0, 1, 2, 3, 4], // all 5 lines
+  },
+};
+```
+
+### 3. BET-Exclusive Winning Roles
+
+Certain winning roles (e.g. SUPER BIG BONUS) can be restricted to MAX BET only.
+
+```ts
+const betConfig: BetConfig = {
+  initialCredit: 1000,
+  betOptions: [1, 2, 3],
+  defaultBet: 3,
+  exclusiveRolesPerBet: {
+    3: ['super_big_bonus'], // SBB only available at 3 BET
+  },
+};
+
+// InternalLottery excludes restricted roles at lower BET
+lottery.draw('Normal', undefined, excludedRoleIds);
+```
 
 ## Usage
 

@@ -20,6 +20,17 @@ export interface BetConfig {
   defaultBet: number;
   /** 変動履歴の保持件数（省略時はデフォルト値を使用） */
   historySize?: number;
+  /**
+   * BET額ごとの有効Paylineインデックス。
+   * 省略時は全Paylineが有効。
+   * @example { 1: [1], 2: [0,1,2], 3: [0,1,2,3,4] }
+   */
+  paylinesPerBet?: Record<number, number[]>;
+  /**
+   * BET額ごとの抽選制限。指定されたBET額未満では抽選対象外となるWinningRole IDの一覧。
+   * @example { 3: ['super_big_bonus'] } — super_big_bonusは3BET時のみ抽選
+   */
+  exclusiveRolesPerBet?: Record<number, string[]>;
 }
 
 /**

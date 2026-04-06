@@ -166,13 +166,16 @@ export class InternalLottery {
   }
 
   /**
-   * 内部抽選を実行し、WinningRole を返却する
+   * 内部抽選を実行し、WinningRole を返却する。
+   * excludeRoleIds が指定された場合、該当する当選役を抽選対象から除外する
+   * （BET額に応じた抽選制限に使用）。
    *
    * @param gameMode - 現在のゲームモード
-   * @param difficultyLevel - 設定段階（オプション、将来の DifficultyPreset 連携用）
+   * @param difficultyLevel - 設定段階（オプション）
+   * @param excludeRoleIds - 抽選対象から除外するWinningRole IDの配列（オプション）
    * @returns 当選役
    */
-  draw(gameMode: GameMode, _difficultyLevel?: number): WinningRole {
+  draw(gameMode: GameMode, _difficultyLevel?: number, excludeRoleIds?: string[]): WinningRole {
     // 持ち越し中のボーナスがある場合は優先返却
     if (this.carryOver !== null) {
       const carried = this.carryOver.winningRole;
@@ -190,6 +193,10 @@ export class InternalLottery {
 
     // 確率テーブルを走査して当選役を決定
     for (const [roleId, probability] of Object.entries(modeProbabilities)) {
+      // BET額制限: 除外対象の当選役はスキップ
+      if (excludeRoleIds && excludeRoleIds.includes(roleId)) {
+        continue;
+      }
       cumulative += probability;
       if (roll < cumulative) {
         // roleId に対応する定義を検索

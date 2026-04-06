@@ -72,8 +72,8 @@ describe('SlotMachine', () => {
     const { container } = render(
       <SlotMachine symbols={testSymbols} renderSymbol={renderSymbol} reelCount={1} rowCount={3} />
     );
-    // Should find custom rendered symbols
+    // Reel renders doubled strip, so custom elements = symbols.length * 2
     const customEls = container.querySelectorAll('[data-testid^="custom-"]');
-    expect(customEls.length).toBe(3);
+    expect(customEls.length).toBe(testSymbols.length * 2);
   });
 });

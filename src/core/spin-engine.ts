@@ -109,41 +109,48 @@ export class SpinEngine<S extends string = string> {
    *
    * @param winningRole - 内部当選役（省略時はランダムフォールバック）
    * @param stopTimings - 各リールのStopTiming配列（省略時はランダム生成）
+   * @param options - BET額・有効Paylineインデックスのオプション
    * @returns スピン結果
    */
-  spin(winningRole?: WinningRole, stopTimings?: StopTiming[]): SpinResult<S> {
+  spin(
+    winningRole?: WinningRole,
+    stopTimings?: StopTiming[],
+    options?: { betAmount?: number; activePaylineIndices?: number[] },
+  ): SpinResult<S> {
     const role = winningRole ?? MISS_ROLE;
-    const reelCount = this.reelConfigs.length;
+    const betMultiplier = options?.betAmount ?? 1;
 
     let stopResults: StopResult[];
 
     if (winningRole) {
-      // ReelController による出目制御
       stopResults = this.controlReels(winningRole, stopTimings);
     } else {
-      // ランダムフォールバック: 重み付け抽選で各リールのシンボルを決定
       stopResults = this.randomStopResults(stopTimings);
     }
 
-    // グリッド生成（grid[row][reel]）
     const grid = this.buildGrid(stopResults);
 
-    // Payline 評価
-    const winLines = this.evaluatePaylines(grid);
+    // Payline filtering: use only active paylines if specified
+    const activePaylines = options?.activePaylineIndices
+      ? this.paylines.filter((pl) => options.activePaylineIndices!.includes(pl.index))
+      : this.paylines;
 
-    // 合計配当
-    const totalPayout = winLines.reduce((sum, wl) => sum + wl.payout, 0);
+    const winLines = this.evaluatePaylinesInternal(grid, activePaylines);
 
-    // 取りこぼし判定
+    // Apply bet multiplier to each win line payout
+    const multipliedWinLines = winLines.map((wl) => ({
+      ...wl,
+      payout: wl.payout * betMultiplier,
+    }));
+
+    const totalPayout = multipliedWinLines.reduce((sum, wl) => sum + wl.payout, 0);
     const isMiss = stopResults.some((sr) => sr.isMiss);
-
-    // リプレイ判定
     const isReplay = role.type === 'REPLAY';
 
     const result: SpinResult<S> = {
       grid,
       stopResults,
-      winLines,
+      winLines: multipliedWinLines,
       totalPayout,
       isReplay,
       isMiss,
@@ -193,17 +200,22 @@ export class SpinEngine<S extends string = string> {
   }
 
   /**
-   * Payline 評価のみ実行。横・斜め・V字等のカスタムパターンに対応。
-   * 複数 Payline 同時当選時は全配当を返却する。
+   * Payline 評価のみ実行（全Payline対象）。横・斜め・V字等のカスタムパターンに対応。
    *
    * @param grid - シンボルグリッド（grid[row][reel]）
    * @returns 当選ライン結果の配列
    */
   evaluatePaylines(grid: S[][]): PaylineResult<S>[] {
+    return this.evaluatePaylinesInternal(grid, this.paylines);
+  }
+
+  /**
+   * 指定されたPayline配列に対してPayline評価を実行する。
+   */
+  private evaluatePaylinesInternal(grid: S[][], paylines: Payline[]): PaylineResult<S>[] {
     const results: PaylineResult<S>[] = [];
 
-    for (const payline of this.paylines) {
-      // payline.positions[reelIndex] = row index for that reel
+    for (const payline of paylines) {
       const symbols: S[] = [];
       let valid = true;
 
@@ -219,7 +231,6 @@ export class SpinEngine<S extends string = string> {
 
       if (!valid) continue;
 
-      // PayTable マッチング
       const matchedEntry = this.findPayTableMatch(symbols);
       if (matchedEntry) {
         results.push({
