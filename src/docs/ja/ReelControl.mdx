@@ -1,0 +1,123 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from '../components/Mermaid';
+import { Table } from '../components/Table';
+
+<Meta title="Docs（日本語）/リール制御・目押し" />
+
+# リール制御・目押し
+
+`ReelController` は内部抽選の当選役に基づいて各リールの停止位置を決定します。引き込み（Slip）・蹴飛ばし（Reject）・AutoStop・取りこぼし判定を提供します。
+
+## 停止タイミングフロー
+
+<Mermaid chart={`
+flowchart TD
+    A[プレイヤーがストップ押下] --> B[stopTiming 位置]
+    B --> C{対象シンボルがSlipRange内?}
+    C -->|Yes| D[引き込み: 対象位置へスリップ]
+    C -->|No| E{当選役がMISS?}
+    E -->|Yes| F[stopTimingで停止]
+    E -->|No| G[蹴飛ばし: 対象を避けて停止]
+    D --> H[StopResult isMiss=false]
+    F --> H
+    G --> I[StopResult isMiss=true]
+`} />
+
+## ReelControllerConfig
+
+<Table
+  headers={['フィールド', '説明']}
+  rows={[
+    ['reelStrips', '各リールのReelStrip（シンボル配列）'],
+    ['slipRanges', 'リールごとの最大引き込みコマ数（デフォルト: 4）'],
+    ['autoStop', 'AutoStopモードの有効化（ランダムタイミング）'],
+    ['stopOrder', 'リール停止順序（デフォルト: 左→右）'],
+    ['carryOverEnabled', 'ボーナス取りこぼし時の持ち越し有効化'],
+  ]}
+/>
+
+## StopResult
+
+<Table
+  headers={['フィールド', '説明']}
+  rows={[
+    ['reelIndex', 'リールインデックス（0始まり）'],
+    ['targetPosition', 'プレイヤーの停止タイミング位置'],
+    ['actualPosition', '引き込み/蹴飛ばし適用後の最終位置'],
+    ['slipCount', '引き込みコマ数'],
+    ['isMiss', '取りこぼしかどうか'],
+  ]}
+/>
+
+## 基本的な使い方
+
+```ts
+import { ReelController } from 'reeljs';
+
+const controller = new ReelController({
+  reelStrips: [
+    ['cherry', 'bell', 'bar', 'seven', 'replay', 'bell', 'watermelon'],
+    ['bell', 'bar', 'seven', 'cherry', 'replay', 'bell', 'watermelon'],
+    ['bar', 'seven', 'cherry', 'bell', 'replay', 'watermelon', 'bell'],
+  ],
+  slipRanges: [4, 4, 4],
+  stopOrder: [0, 1, 2], // 左 → 中 → 右
+});
+
+// リール0の停止位置を決定
+const result = controller.determineStopPosition(0, winningRole, 2);
+console.log(result.actualPosition, result.isMiss);
+
+// 停止コールバック登録
+controller.onStop((result) => {
+  console.log(`リール${result.reelIndex}: pos=${result.actualPosition}, miss=${result.isMiss}`);
+});
+```
+
+## 引き込み（Slip）と蹴飛ばし（Reject）
+
+**引き込み:** 対象シンボルが `SlipRange` 以内にある場合、リールが「引き込み」で対象位置に停止します。
+
+**蹴飛ばし:** 当選役がMISSでないのに対象シンボルが `SlipRange` 外の場合、対象シンボルを避けるように停止位置をずらします（取りこぼし）。
+
+```ts
+// SlipRange = 4: 最大4コマ先まで引き込み可能
+// stopTiming = 2, 'cherry' が位置5 → 3コマ引き込み → actualPosition = 5
+// stopTiming = 2, 'cherry' が位置8 → 範囲外 → 蹴飛ばし → isMiss = true
+```
+
+## AutoStop
+
+`autoStop` 有効時、全リールが `stopOrder` に従ってランダムタイミングで停止します。
+
+```ts
+const controller = new ReelController({
+  reelStrips: [strip1, strip2, strip3],
+  autoStop: true,
+});
+
+const results = controller.autoStopAll(winningRole);
+// 全リールのStopResult[]を返却
+```
+
+## 取りこぼしと持ち越し（CarryOver）
+
+ボーナスが内部当選したがプレイヤーがシンボルを揃えられなかった場合（取りこぼし）、`InternalLottery.setCarryOver` でボーナス当選状態を次ゲーム以降に持ち越せます。
+
+```ts
+// 全リールの停止位置決定後
+if (stopResults.some((r) => r.isMiss) && winningRole.type === 'BONUS') {
+  lottery.setCarryOver(winningRole);
+  // プレイヤーがシンボルを揃えるまでボーナス当選状態を維持
+}
+```
+
+## StopButton コンポーネント
+
+`StopButton` はリール手動停止のUIを提供します:
+
+```tsx
+import { StopButton } from 'reeljs';
+
+<StopButton reelIndex={0} onStop={(timing) => handleStop(0, timing)} disabled={!isSpinning} />
+```

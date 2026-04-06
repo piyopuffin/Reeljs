@@ -1,0 +1,126 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from './components/Mermaid';
+import { Table } from './components/Table';
+
+<Meta title="Docs (EN)/Spin Counter & Threshold" />
+
+# Spin Counter & Threshold Trigger
+
+`SpinCounter` tracks spin counts per GameMode. `ThresholdTrigger` fires actions when counters reach configured thresholds — enabling ceiling (天井) mechanics.
+
+## Architecture
+
+<Mermaid chart={`
+flowchart TD
+    A[Lever ON] --> B[SpinCounter.increment]
+    B --> C[ThresholdTrigger.check]
+    C -->|value >= threshold| D[onThresholdReached callback]
+    C -->|value < threshold| E[Continue]
+    D --> F[Execute action e.g. forceBonus]
+    F --> G[SpinCounter.reset + ThresholdTrigger.reroll]
+`} />
+
+## SpinCounter
+
+Manages multiple named counters. Each counter targets a specific GameMode and resets on a configurable condition.
+
+### CounterConfig
+
+<Table
+  headers={['Field', 'Description']}
+  rows={[
+    ['name', 'Counter identifier (e.g. "normalSpins")'],
+    ['targetGameMode', 'GameMode to count spins for (Normal, Chance, Bonus, BT)'],
+    ['resetCondition', 'Condition string that triggers reset (e.g. "BonusMode")'],
+  ]}
+/>
+
+```ts
+import { SpinCounter } from 'reeljs';
+
+const counter = new SpinCounter([
+  { name: 'normalSpins', targetGameMode: 'Normal', resetCondition: 'BonusMode' },
+  { name: 'chanceSpins', targetGameMode: 'Chance', resetCondition: 'BonusMode' },
+]);
+
+counter.increment('normalSpins');
+console.log(counter.get('normalSpins')); // 1
+
+// Reset all counters matching a condition
+counter.checkResetCondition('BonusMode'); // resets normalSpins & chanceSpins
+```
+
+## ThresholdTrigger
+
+Compares counter values against thresholds. Supports fixed values and `ThresholdRange` (random ceiling).
+
+### ThresholdConfig
+
+<Table
+  headers={['Field', 'Description']}
+  rows={[
+    ['counterName', 'Target counter name'],
+    ['targetGameMode', 'GameMode this threshold applies to'],
+    ['threshold', 'Fixed number or { min, max } range'],
+    ['action', 'Action name fired on threshold reach'],
+    ['resetCondition', 'Condition that resets the counter'],
+  ]}
+/>
+
+```ts
+import { ThresholdTrigger } from 'reeljs';
+
+const trigger = new ThresholdTrigger([
+  { counterName: 'normalSpins', targetGameMode: 'Normal', threshold: { min: 500, max: 800 }, action: 'forceBonus', resetCondition: 'BonusMode' },
+]);
+
+trigger.onThresholdReached((name, value, action) => {
+  console.log(`${name} reached ${value} → ${action}`);
+});
+
+trigger.check('normalSpins', 750); // fires if resolved threshold <= 750
+trigger.reroll('normalSpins');     // re-randomize threshold for next cycle
+```
+
+## useThresholdTrigger Hook
+
+Wraps both `SpinCounter` and `ThresholdTrigger` with reactive state.
+
+```tsx
+import { useThresholdTrigger } from 'reeljs';
+
+function CeilingDisplay() {
+  const { counters, thresholds, resetCounter } = useThresholdTrigger([
+    { counterName: 'normalSpins', targetGameMode: 'Normal', threshold: { min: 500, max: 800 }, action: 'forceBonus', resetCondition: 'BonusMode' },
+  ]);
+
+  return (
+    <div>
+      <p>Spins: {counters.normalSpins} / Ceiling: {thresholds.normalSpins}</p>
+      <button onClick={() => resetCounter('normalSpins')}>Reset</button>
+    </div>
+  );
+}
+```
+
+## Ceiling (天井) Pattern
+
+A typical ceiling implementation combines SpinCounter + ThresholdTrigger + GameModeManager:
+
+```ts
+// 1. Configure threshold with range (振り分け天井)
+const configs = [
+  { counterName: 'normalSpins', targetGameMode: 'Normal', threshold: { min: 500, max: 800 }, action: 'forceBonus', resetCondition: 'BonusMode' },
+];
+
+// 2. On each spin in Normal mode, increment and check
+counter.increment('normalSpins');
+if (trigger.check('normalSpins', counter.get('normalSpins'))) {
+  // Ceiling reached — force bonus
+  gameModeManager.transition('Bonus');
+}
+
+// 3. On bonus end, reset counter and re-roll threshold
+counter.checkResetCondition('BonusMode');
+trigger.reroll('normalSpins');
+```

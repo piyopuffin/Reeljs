@@ -1,0 +1,117 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from '../components/Mermaid';
+import { Table } from '../components/Table';
+
+<Meta title="Docs（日本語）/設定段階" />
+
+# 設定段階
+
+`DifficultyPreset` は設定段階を管理します。設定を切り替えることで、内部抽選確率・モード遷移確率・リプレイ確率を一括変更します。
+
+## 概要
+
+<Mermaid chart={`
+flowchart TD
+    A[DifficultyPreset] --> B[設定1]
+    A --> C[設定2]
+    A --> D[...]
+    A --> E[設定6]
+    B --> F[lotteryProbabilities]
+    B --> G[transitionProbabilities]
+    B --> H[replayProbability]
+    E --> I[lotteryProbabilities]
+    E --> J[transitionProbabilities]
+    E --> K[replayProbability]
+`} />
+
+## DifficultyConfig
+
+<Table
+  headers={['フィールド', '説明']}
+  rows={[
+    ['level', '設定段階番号（例: 1〜6）'],
+    ['lotteryProbabilities', '小役ID別の当選確率'],
+    ['transitionProbabilities', 'モード遷移確率の上書き'],
+    ['replayProbability', 'リプレイ（再遊技）確率'],
+  ]}
+/>
+
+## DifficultyPresetConfig
+
+<Table
+  headers={['フィールド', '説明']}
+  rows={[
+    ['levels', '設定段階番号 → DifficultyConfig のレコード'],
+    ['initialLevel', '初期設定段階'],
+  ]}
+/>
+
+## 使用例
+
+```ts
+import { DifficultyPreset } from 'reeljs';
+
+const preset = new DifficultyPreset({
+  levels: {
+    1: { level: 1, lotteryProbabilities: { cherry: 0.12, bell: 0.08 }, transitionProbabilities: { normalToChance: 0.01 }, replayProbability: 0.16 },
+    2: { level: 2, lotteryProbabilities: { cherry: 0.13, bell: 0.09 }, transitionProbabilities: { normalToChance: 0.015 }, replayProbability: 0.165 },
+    6: { level: 6, lotteryProbabilities: { cherry: 0.15, bell: 0.12 }, transitionProbabilities: { normalToChance: 0.03 }, replayProbability: 0.18 },
+  },
+  initialLevel: 1,
+});
+
+console.log(preset.currentLevel);                  // 1
+console.log(preset.currentConfig.replayProbability); // 0.16
+
+preset.setDifficulty(6);
+console.log(preset.currentConfig.replayProbability); // 0.18
+console.log(preset.getAvailableLevels());            // [1, 2, 6]
+```
+
+## useDifficulty フック
+
+Reactコンポーネント向けにリアクティブな設定段階状態を提供します。
+
+```tsx
+import { useDifficulty } from 'reeljs';
+
+function DifficultySelector() {
+  const { currentLevel, currentConfig, setDifficulty } = useDifficulty({
+    levels: {
+      1: { level: 1, lotteryProbabilities: { cherry: 0.12 }, transitionProbabilities: {}, replayProbability: 0.16 },
+      6: { level: 6, lotteryProbabilities: { cherry: 0.15 }, transitionProbabilities: {}, replayProbability: 0.18 },
+    },
+    initialLevel: 1,
+  });
+
+  return (
+    <div>
+      <p>現在の設定: {currentLevel}</p>
+      <p>リプレイ確率: {currentConfig.replayProbability}</p>
+      {[1, 6].map((lv) => (
+        <button key={lv} onClick={() => setDifficulty(lv)}>設定{lv}</button>
+      ))}
+    </div>
+  );
+}
+```
+
+## 設定1〜6 実装パターン
+
+パチスロの標準的な6段階設定:
+
+```ts
+const difficultyConfig = {
+  levels: {
+    1: { level: 1, lotteryProbabilities: { cherry: 0.120, bell: 0.080, watermelon: 0.040 }, transitionProbabilities: { normalToChance: 0.010 }, replayProbability: 0.160 },
+    2: { level: 2, lotteryProbabilities: { cherry: 0.125, bell: 0.085, watermelon: 0.042 }, transitionProbabilities: { normalToChance: 0.015 }, replayProbability: 0.165 },
+    3: { level: 3, lotteryProbabilities: { cherry: 0.130, bell: 0.090, watermelon: 0.045 }, transitionProbabilities: { normalToChance: 0.018 }, replayProbability: 0.168 },
+    4: { level: 4, lotteryProbabilities: { cherry: 0.135, bell: 0.095, watermelon: 0.048 }, transitionProbabilities: { normalToChance: 0.020 }, replayProbability: 0.172 },
+    5: { level: 5, lotteryProbabilities: { cherry: 0.140, bell: 0.100, watermelon: 0.050 }, transitionProbabilities: { normalToChance: 0.025 }, replayProbability: 0.176 },
+    6: { level: 6, lotteryProbabilities: { cherry: 0.150, bell: 0.120, watermelon: 0.055 }, transitionProbabilities: { normalToChance: 0.030 }, replayProbability: 0.180 },
+  },
+  initialLevel: 1,
+};
+
+// 高設定ほど確率が高い = プレイヤーに有利
+```

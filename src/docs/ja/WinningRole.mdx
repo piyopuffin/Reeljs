@@ -1,0 +1,115 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from '../components/Mermaid';
+import { Table } from '../components/Table';
+
+<Meta title="Docs（日本語）/小役定義" />
+
+# 小役定義
+
+`WinningRoleDefinition` は内部抽選で使用する小役（当選役）を定義します。各小役にはID、表示名、種別、配当、出目パターン、優先順位を設定します。
+
+## 当選役解決フロー
+
+<Mermaid chart={`
+flowchart TD
+    A[InternalLottery.draw] --> B[乱数生成]
+    B --> C[確率テーブルと照合]
+    C --> D[WinningRoleDefinition を解決]
+    D --> E{複数パターンが一致?}
+    E -->|Yes| F[優先順位が高い方を採用]
+    E -->|No| G[WinningRole を返却]
+    F --> G
+`} />
+
+## WinningRoleDefinition
+
+<Table
+  headers={['フィールド', '型', '説明']}
+  rows={[
+    ['id', 'string', '一意識別子（例: "cherry", "bell"）'],
+    ['name', 'string', '表示名（例: "チェリー", "ベル"）'],
+    ['type', 'WinningRoleType', 'BONUS, SMALL_WIN, REPLAY, MISS のいずれか'],
+    ['payout', 'number', '配当額（BONUS/REPLAYは0）'],
+    ['patterns', 'string[][]', '成立シンボルパターン（"ANY"でワイルドカード）'],
+    ['priority', 'number', '値が大きいほど優先（競合解決用）'],
+  ]}
+/>
+
+## WinningRoleType
+
+<Table
+  headers={['種別', '説明']}
+  rows={[
+    ['BONUS', 'ボーナス当選 — ボーナスモードへ移行（配当0）'],
+    ['SMALL_WIN', '小役当選 — クレジット直接配当（チェリー、ベル等）'],
+    ['REPLAY', 'リプレイ — 再遊技（配当0）'],
+    ['MISS', 'ハズレ — 当選なし'],
+  ]}
+/>
+
+## デフォルトプリセット
+
+ライブラリは7つのデフォルト小役定義を提供します:
+
+<Table
+  headers={['ID', '名前', '種別', '配当', 'パターン', '優先順位']}
+  rows={[
+    ['cherry', 'チェリー', 'SMALL_WIN', '2', 'cherry-ANY-ANY', '10'],
+    ['watermelon', 'スイカ', 'SMALL_WIN', '6', 'watermelon×3', '20'],
+    ['bell', 'ベル', 'SMALL_WIN', '8', 'bell×3', '30'],
+    ['replay', 'リプレイ', 'REPLAY', '0', 'replay×3', '5'],
+    ['super_big_bonus', 'SUPER BIG BONUS', 'BONUS', '0', 'seven×3', '100'],
+    ['big_bonus', 'BIG BONUS', 'BONUS', '0', 'bar×3', '90'],
+    ['reg_bonus', 'REG BONUS', 'BONUS', '0', 'seven-seven-bar', '80'],
+  ]}
+/>
+
+## カスタム小役定義
+
+```ts
+import { InternalLottery } from 'reeljs';
+
+const lottery = new InternalLottery({
+  probabilities: {
+    Normal: { cherry: 0.12, bell: 0.08, watermelon: 0.04, replay: 0.16, miss: 0.60 },
+    Chance: { cherry: 0.15, bell: 0.10, watermelon: 0.05, replay: 0.16, miss: 0.54 },
+    Bonus: { bell: 0.30, replay: 0.05, miss: 0.65 },
+    BT: { cherry: 0.12, bell: 0.08, replay: 0.16, miss: 0.64 },
+  },
+  winningRoleDefinitions: [
+    { id: 'cherry', name: 'チェリー', type: 'SMALL_WIN', payout: 2, patterns: [['cherry', 'ANY', 'ANY']], priority: 10 },
+    { id: 'bell', name: 'ベル', type: 'SMALL_WIN', payout: 8, patterns: [['bell', 'bell', 'bell']], priority: 30 },
+    { id: 'watermelon', name: 'スイカ', type: 'SMALL_WIN', payout: 6, patterns: [['watermelon', 'watermelon', 'watermelon']], priority: 20 },
+    { id: 'replay', name: 'リプレイ', type: 'REPLAY', payout: 0, patterns: [['replay', 'replay', 'replay']], priority: 5 },
+  ],
+});
+
+const role = lottery.draw('Normal');
+console.log(role.id, role.type, role.payout);
+```
+
+## 優先順位による競合解決
+
+複数の小役が同時に成立し得る場合、`priority` の値が大きい方が優先されます。リール制御時にどのパターンを引き込むかの判定に使用されます。
+
+```ts
+// cherry（priority: 10）と bell（priority: 30）が同時に表示可能な場合、
+// bell がリール制御で優先されます。
+```
+
+## BET額限定当選役
+
+`BetConfig.exclusiveRolesPerBet` で特定のBET額でのみ抽選対象となる小役を設定できます。対象外のBET額では `excludeRoleIds` で抽選から除外されます。
+
+```ts
+// SUPER BIG BONUS は MAX BET（3枚）時のみ抽選
+const betConfig = {
+  initialCredit: 1000,
+  betOptions: [1, 2, 3],
+  defaultBet: 3,
+  exclusiveRolesPerBet: { 3: ['super_big_bonus'] },
+};
+
+// 1BET時は super_big_bonus を抽選対象から除外
+lottery.draw('Normal', undefined, ['super_big_bonus']);
+```

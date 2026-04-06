@@ -1,0 +1,172 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from './components/Mermaid';
+import { Table } from './components/Table';
+
+<Meta title="Docs (EN)/Quick Start Guide" />
+
+# Quick Start Guide
+
+Build a minimal slot game in 5 steps using reeljs.
+
+## Architecture Overview
+
+<Mermaid chart={`
+flowchart TD
+    A[1. Define Symbols & ReelStrip] --> B[2. Configure PayTable & Paylines]
+    B --> C[3. Set up useSlotMachine]
+    C --> D[4. Add Credit Management]
+    D --> E[5. Add Game Modes]
+`} />
+
+## Step 1: Define Symbols & ReelStrip
+
+Define the symbols and their arrangement on each reel.
+
+```ts
+import type { ReelConfig } from 'reeljs';
+
+type Sym = 'cherry' | 'bell' | 'bar' | 'seven' | 'replay';
+
+const reelConfigs: ReelConfig<Sym>[] = [
+  {
+    symbols: [
+      { id: 'cherry', name: 'Cherry', weight: 10 },
+      { id: 'bell', name: 'Bell', weight: 8 },
+      { id: 'bar', name: 'BAR', weight: 4 },
+      { id: 'seven', name: '7', weight: 2 },
+      { id: 'replay', name: 'Replay', weight: 6 },
+    ],
+    reelStrip: ['cherry', 'bell', 'bar', 'seven', 'replay', 'bell', 'cherry'],
+  },
+  // ... repeat for reel 2 and 3
+];
+```
+
+## Step 2: Configure PayTable & Paylines
+
+Define what combinations pay and which lines to check.
+
+```ts
+import type { PayTable, Payline } from 'reeljs';
+
+const payTable: PayTable<Sym> = {
+  entries: [
+    { pattern: ['cherry', 'cherry', 'cherry'], payout: 10, roleType: 'SMALL_WIN' },
+    { pattern: ['bell', 'bell', 'bell'], payout: 8, roleType: 'SMALL_WIN' },
+    { pattern: ['bar', 'bar', 'bar'], payout: 15, roleType: 'SMALL_WIN' },
+    { pattern: ['seven', 'seven', 'seven'], payout: 0, roleType: 'BONUS' },
+    { pattern: ['replay', 'replay', 'replay'], payout: 0, roleType: 'REPLAY' },
+  ],
+};
+
+const paylines: Payline[] = [
+  { index: 0, positions: [0, 0, 0] }, // top row
+  { index: 1, positions: [1, 1, 1] }, // center row
+  { index: 2, positions: [2, 2, 2] }, // bottom row
+];
+```
+
+## Step 3: Set up useSlotMachine
+
+The main hook integrates spin engine, credit, and game cycle.
+
+```tsx
+import { useSlotMachine } from 'reeljs';
+
+function SlotGame() {
+  const { spinState, spinResult, spin, reset } = useSlotMachine({
+    spinEngine: { reelConfigs, payTable, paylines },
+    credit: { initialCredit: 1000, betOptions: [1, 2, 3], defaultBet: 3 },
+  });
+
+  return (
+    <div>
+      <p>State: {spinState}</p>
+      {spinResult && <p>Payout: {spinResult.totalPayout}</p>}
+      <button onClick={spin} disabled={spinState === 'spinning'}>Spin</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+```
+
+## Step 4: Add Credit Management
+
+Use `useCredit` for fine-grained credit control.
+
+```tsx
+import { useCredit } from 'reeljs';
+
+function CreditPanel() {
+  const { balance, currentBet, canSpin, setBet, deposit, withdraw } = useCredit({
+    initialCredit: 1000,
+    betOptions: [1, 2, 3],
+    defaultBet: 3,
+  });
+
+  return (
+    <div>
+      <p>Balance: {balance} / BET: {currentBet}</p>
+      <button onClick={() => setBet(1)}>1 BET</button>
+      <button onClick={() => setBet(3)}>MAX BET</button>
+      <button onClick={() => deposit(100)}>+100</button>
+    </div>
+  );
+}
+```
+
+## Step 5: Add Game Modes
+
+Integrate mode transitions for a complete game loop.
+
+```tsx
+import { useGameMode } from 'reeljs';
+
+const { currentMode, transition } = useGameMode({
+  modeTransitionConfig: {
+    normalToChance: 0.02,
+    chanceTobt: 0.3,
+    btToSuperBigBonus: 0.1,
+  },
+});
+```
+
+## Complete Minimal Example
+
+```tsx
+import { useSlotMachine } from 'reeljs';
+import type { ReelConfig, PayTable, Payline } from 'reeljs';
+
+type S = 'cherry' | 'bell' | 'replay';
+
+const reelConfigs: ReelConfig<S>[] = [
+  { symbols: [{ id: 'cherry', name: 'Cherry', weight: 10 }, { id: 'bell', name: 'Bell', weight: 8 }, { id: 'replay', name: 'Replay', weight: 6 }], reelStrip: ['cherry', 'bell', 'replay', 'cherry', 'bell'] },
+  { symbols: [{ id: 'cherry', name: 'Cherry', weight: 10 }, { id: 'bell', name: 'Bell', weight: 8 }, { id: 'replay', name: 'Replay', weight: 6 }], reelStrip: ['bell', 'cherry', 'replay', 'bell', 'cherry'] },
+  { symbols: [{ id: 'cherry', name: 'Cherry', weight: 10 }, { id: 'bell', name: 'Bell', weight: 8 }, { id: 'replay', name: 'Replay', weight: 6 }], reelStrip: ['replay', 'bell', 'cherry', 'bell', 'cherry'] },
+];
+
+const payTable: PayTable<S> = {
+  entries: [
+    { pattern: ['cherry', 'cherry', 'cherry'], payout: 10, roleType: 'SMALL_WIN' },
+    { pattern: ['bell', 'bell', 'bell'], payout: 8, roleType: 'SMALL_WIN' },
+    { pattern: ['replay', 'replay', 'replay'], payout: 0, roleType: 'REPLAY' },
+  ],
+};
+
+const paylines: Payline[] = [{ index: 0, positions: [1, 1, 1] }];
+
+function MySlotGame() {
+  const { spinState, spinResult, spin, reset } = useSlotMachine({
+    spinEngine: { reelConfigs, payTable, paylines },
+    credit: { initialCredit: 1000, betOptions: [3], defaultBet: 3 },
+  });
+
+  return (
+    <div>
+      <p>State: {spinState} | Payout: {spinResult?.totalPayout ?? 0}</p>
+      <button onClick={spin} disabled={spinState === 'spinning'}>Spin</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+```

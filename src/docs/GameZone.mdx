@@ -1,0 +1,123 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from './components/Mermaid';
+import { Table } from './components/Table';
+
+<Meta title="Docs (EN)/Game Zone Management" />
+
+# Game Zone Management
+
+`ZoneManager` manages game zones (区間) — the top-level state layer above GameMode. Zones enforce game count limits, net credit limits, and trigger forced resets on zone transitions.
+
+## Zone Hierarchy
+
+<Mermaid chart={`
+flowchart TD
+    Z[Zone 区間] --> M[GameMode]
+    M --> P[GamePhase]
+    Z -->|"maxGames / maxNetCredits"| R[Force Reset & Zone Transition]
+    subgraph Zone
+      direction LR
+      N[normal 通常区間]
+      S[special 特別区間]
+    end
+    subgraph GameMode
+      direction LR
+      NM[Normal]
+      CM[Chance]
+      BM[Bonus]
+      BT[BT]
+    end
+`} />
+
+## ZoneConfig
+
+<Table
+  headers={['Field', 'Description']}
+  rows={[
+    ['name', 'Display name of the zone'],
+    ['maxGames', 'Maximum games allowed in this zone'],
+    ['maxNetCredits', 'Maximum net credits (差枚数) allowed'],
+    ['resetTargets', 'What to reset on zone end: "gameMode", "spinCounter"'],
+    ['nextZone', 'Zone to transition to when limits are reached'],
+    ['isSpecial', 'Whether this is a special zone (特別区間)'],
+  ]}
+/>
+
+## ZoneManager
+
+```ts
+import { ZoneManager } from 'reeljs';
+
+const manager = new ZoneManager({
+  zones: {
+    normal: { name: 'Normal Zone', maxGames: 1500, maxNetCredits: 2400, resetTargets: ['gameMode', 'spinCounter'], nextZone: 'special', isSpecial: false },
+    special: { name: 'Special Zone', maxGames: 500, maxNetCredits: 1000, resetTargets: ['gameMode'], nextZone: 'normal', isSpecial: true },
+  },
+  initialZone: 'normal',
+});
+
+// Register callbacks
+manager.onZoneChange((from, to) => console.log(`Zone: ${from} → ${to}`));
+manager.onReset((targets) => console.log('Reset:', targets));
+
+// Update on each spin
+manager.update(spinResult);
+
+// Check current state
+console.log(manager.currentState); // { currentZone, gamesPlayed, netCredits }
+console.log(manager.indicator);    // { isSpecialZone, zoneName }
+```
+
+## Zone Transition Flow
+
+<Mermaid chart={`
+flowchart LR
+    A[update spinResult] --> B{maxGames or maxNetCredits reached?}
+    B -->|No| C[Continue in current zone]
+    B -->|Yes| D[Fire onReset callbacks]
+    D --> E[Reset gamesPlayed & netCredits]
+    E --> F[Transition to nextZone]
+    F --> G[Fire onZoneChange callbacks]
+`} />
+
+## useGameZone Hook
+
+Provides reactive zone state for React components.
+
+```tsx
+import { useGameZone } from 'reeljs';
+
+function ZoneDisplay() {
+  const { currentZone, gamesPlayed, remainingGames, remainingCredits, indicator, update } = useGameZone({
+    zones: {
+      normal: { name: 'Normal Zone', maxGames: 1500, maxNetCredits: 2400, resetTargets: [], nextZone: 'special', isSpecial: false },
+      special: { name: 'Special Zone', maxGames: 500, maxNetCredits: 1000, resetTargets: ['gameMode'], nextZone: 'normal', isSpecial: true },
+    },
+    initialZone: 'normal',
+  });
+
+  return (
+    <div>
+      <p>{indicator.zoneName} ({indicator.isSpecialZone ? 'Special' : 'Normal'})</p>
+      <p>Games: {gamesPlayed} / Remaining: {remainingGames}</p>
+    </div>
+  );
+}
+```
+
+## 有利区間 (Advantageous Zone) Pattern
+
+Japanese pachislot regulations require tracking "advantageous zones" with game/credit limits:
+
+```ts
+const zoneConfig = {
+  zones: {
+    normal: { name: '通常区間', maxGames: 1500, maxNetCredits: 2400, resetTargets: ['gameMode', 'spinCounter'], nextZone: 'special', isSpecial: false },
+    special: { name: '有利区間', maxGames: 1500, maxNetCredits: 2400, resetTargets: ['gameMode', 'spinCounter'], nextZone: 'normal', isSpecial: true },
+  },
+  initialZone: 'normal',
+};
+
+// ZoneIndicator shows whether the player is in a special zone
+// Use indicator.isSpecialZone to display the 有利区間 lamp
+```

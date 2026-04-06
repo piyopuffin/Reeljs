@@ -1,0 +1,128 @@
+import { Meta } from '@storybook/blocks';
+import { Table } from '../components/Table';
+import { Mermaid } from '../components/Mermaid';
+
+<Meta title="Docs（日本語）/サウンド・BGM" />
+
+# サウンド・BGM
+
+`useSoundEffect` は `EventEmitter` のイベントに連動して効果音を再生するフックです。ミュート・音量の状態管理を提供し、実際のオーディオ再生は開発者に委ねます。
+
+## アーキテクチャ
+
+<Mermaid chart={`
+flowchart LR
+    GCM[GameCycleManager] -->|emit| EE[EventEmitter]
+    EE -->|spinStart| SE[useSoundEffect]
+    EE -->|reelStop| SE
+    EE -->|win| SE
+    EE -->|bonusStart| SE
+    SE -->|play| Audio[Audio API]
+`} />
+
+## 基本的な使い方
+
+```tsx
+import { useSoundEffect, EventEmitter } from 'reeljs';
+
+const emitter = new EventEmitter();
+
+function Game() {
+  const { isMuted, volume, toggleMute, setVolume } = useSoundEffect(
+    {
+      spinStart: '/sounds/spin.mp3',
+      reelStop: '/sounds/stop.mp3',
+      win: '/sounds/win.mp3',
+      bonusStart: '/sounds/bonus.mp3',
+    },
+    emitter,
+  );
+
+  return (
+    <div>
+      <button onClick={toggleMute}>{isMuted ? '🔇' : '🔊'}</button>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.1}
+        value={volume}
+        onChange={(e) => setVolume(Number(e.target.value))}
+      />
+    </div>
+  );
+}
+```
+
+## サウンドマップ
+
+第1引数はイベント名とオーディオファイルURLのマッピングです。
+
+<Table
+  headers={['イベント', 'タイミング', '典型的なサウンド']}
+  rows={[
+    ['spinStart', 'リール回転開始', 'レバー音 / 回転開始音'],
+    ['reelStop', '各リール停止', 'クリック音 / 停止音'],
+    ['win', '当選検出', 'コイン音 / ファンファーレ'],
+    ['bonusStart', 'ボーナス開始', 'ボーナスジングル'],
+    ['modeChange', 'モード遷移', 'モード変更チャイム'],
+    ['notification', '告知発火', 'アラート音'],
+  ]}
+/>
+
+カスタムイベントも使えます：
+
+```ts
+useSoundEffect({
+  spinStart: '/sounds/spin.mp3',
+  myCustomEvent: '/sounds/custom.mp3',
+}, emitter);
+
+// 後で発火:
+emitter.emit('myCustomEvent');
+```
+
+## BGMループパターン
+
+`useSoundEffect` はワンショット効果音向けです。BGM（ループ再生）には `useEvent` と Web Audio API を直接使います：
+
+```tsx
+import { useEvent, EventEmitter } from 'reeljs';
+import { useRef } from 'react';
+
+function BGMPlayer({ emitter }: { emitter: EventEmitter }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { on } = useEvent(emitter);
+
+  // ボーナス開始でBGM再生
+  on('bonusStart', () => {
+    if (audioRef.current) {
+      audioRef.current.src = '/bgm/bonus.mp3';
+      audioRef.current.loop = true;
+      audioRef.current.play();
+    }
+  });
+
+  // 通常モードに戻ったらBGM停止
+  on('modeChange', (payload: { to: string }) => {
+    if (payload.to === 'Normal' && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  });
+
+  return <audio ref={audioRef} />;
+}
+```
+
+## ミュート・音量制御
+
+<Table
+  headers={['プロパティ / メソッド', '型', '説明']}
+  rows={[
+    ['isMuted', 'boolean', '現在のミュート状態'],
+    ['volume', 'number (0-1)', '現在の音量'],
+    ['toggleMute()', 'function', 'ミュートのON/OFF切り替え'],
+    ['setVolume(v)', 'function', '音量設定（0-1にクランプ）'],
+  ]}
+/>

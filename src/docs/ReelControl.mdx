@@ -1,0 +1,123 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from './components/Mermaid';
+import { Table } from './components/Table';
+
+<Meta title="Docs (EN)/Reel Control & Stop Timing" />
+
+# Reel Control & Stop Timing
+
+`ReelController` determines final stop positions for each reel based on the winning role from `InternalLottery`. It handles Slip (pull-in), Reject (push-away), AutoStop, and Miss (取りこぼし) detection.
+
+## Stop Timing Flow
+
+<Mermaid chart={`
+flowchart TD
+    A[Player presses Stop] --> B[stopTiming position]
+    B --> C{Target symbol within SlipRange?}
+    C -->|Yes| D[Slip: pull-in to target]
+    C -->|No| E{Winning role is MISS?}
+    E -->|Yes| F[Stop at stopTiming]
+    E -->|No| G[Reject: shift away from target]
+    D --> H[StopResult isMiss=false]
+    F --> H
+    G --> I[StopResult isMiss=true]
+`} />
+
+## ReelControllerConfig
+
+<Table
+  headers={['Field', 'Description']}
+  rows={[
+    ['reelStrips', 'Array of ReelStrip (symbol arrays) for each reel'],
+    ['slipRanges', 'Max slip distance per reel (default: 4)'],
+    ['autoStop', 'Enable AutoStop mode (random timing)'],
+    ['stopOrder', 'Reel stop order (default: left to right)'],
+    ['carryOverEnabled', 'Enable carry-over for missed bonus'],
+  ]}
+/>
+
+## StopResult
+
+<Table
+  headers={['Field', 'Description']}
+  rows={[
+    ['reelIndex', 'Reel index (0-based)'],
+    ['targetPosition', 'Player stop timing position'],
+    ['actualPosition', 'Final position after Slip/Reject'],
+    ['slipCount', 'Number of positions slipped'],
+    ['isMiss', 'Whether the target symbol was missed (取りこぼし)'],
+  ]}
+/>
+
+## Basic Usage
+
+```ts
+import { ReelController } from 'reeljs';
+
+const controller = new ReelController({
+  reelStrips: [
+    ['cherry', 'bell', 'bar', 'seven', 'replay', 'bell', 'watermelon'],
+    ['bell', 'bar', 'seven', 'cherry', 'replay', 'bell', 'watermelon'],
+    ['bar', 'seven', 'cherry', 'bell', 'replay', 'watermelon', 'bell'],
+  ],
+  slipRanges: [4, 4, 4],
+  stopOrder: [0, 1, 2], // left → center → right
+});
+
+// Determine stop position for reel 0
+const result = controller.determineStopPosition(0, winningRole, 2);
+console.log(result.actualPosition, result.isMiss);
+
+// Register stop callback
+controller.onStop((result) => {
+  console.log(`Reel ${result.reelIndex}: pos=${result.actualPosition}, miss=${result.isMiss}`);
+});
+```
+
+## Slip & Reject
+
+**Slip (引き込み):** When the target symbol is within `SlipRange` positions ahead of `stopTiming`, the reel "pulls in" to land on it.
+
+**Reject (蹴飛ばし):** When the winning role is NOT MISS but the target symbol is beyond `SlipRange`, the reel shifts to avoid showing the target — resulting in a miss.
+
+```ts
+// SlipRange = 4: can pull in up to 4 positions forward
+// stopTiming = 2, target 'cherry' at position 5 → slip 3 positions → actualPosition = 5
+// stopTiming = 2, target 'cherry' at position 8 → beyond range → reject → isMiss = true
+```
+
+## AutoStop
+
+When `autoStop` is enabled, all reels stop at random positions following the configured `stopOrder`.
+
+```ts
+const controller = new ReelController({
+  reelStrips: [strip1, strip2, strip3],
+  autoStop: true,
+});
+
+const results = controller.autoStopAll(winningRole);
+// Returns StopResult[] for all reels
+```
+
+## Miss (取りこぼし) & CarryOver
+
+When a bonus is won internally but the player fails to align the symbols (miss), the bonus can be carried over to subsequent spins via `InternalLottery.setCarryOver`.
+
+```ts
+// After determining all stop positions
+if (stopResults.some((r) => r.isMiss) && winningRole.type === 'BONUS') {
+  lottery.setCarryOver(winningRole);
+  // Bonus remains internally won until player aligns symbols
+}
+```
+
+## StopButton Component
+
+The `StopButton` component provides the UI for manual reel stopping:
+
+```tsx
+import { StopButton } from 'reeljs';
+
+<StopButton reelIndex={0} onStop={(timing) => handleStop(0, timing)} disabled={!isSpinning} />
+```

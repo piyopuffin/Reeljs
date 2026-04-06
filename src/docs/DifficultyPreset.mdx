@@ -1,0 +1,117 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from './components/Mermaid';
+import { Table } from './components/Table';
+
+<Meta title="Docs (EN)/Difficulty Preset" />
+
+# Difficulty Preset
+
+`DifficultyPreset` manages difficulty levels (設定段階). Switching levels bulk-updates lottery probabilities, mode transition rates, and replay probability.
+
+## Overview
+
+<Mermaid chart={`
+flowchart TD
+    A[DifficultyPreset] --> B[Level 1]
+    A --> C[Level 2]
+    A --> D[...]
+    A --> E[Level 6]
+    B --> F[lotteryProbabilities]
+    B --> G[transitionProbabilities]
+    B --> H[replayProbability]
+    E --> I[lotteryProbabilities]
+    E --> J[transitionProbabilities]
+    E --> K[replayProbability]
+`} />
+
+## DifficultyConfig
+
+<Table
+  headers={['Field', 'Description']}
+  rows={[
+    ['level', 'Difficulty level number (e.g. 1–6)'],
+    ['lotteryProbabilities', 'Winning role probabilities per role ID'],
+    ['transitionProbabilities', 'Mode transition probability overrides'],
+    ['replayProbability', 'Replay (re-spin) probability'],
+  ]}
+/>
+
+## DifficultyPresetConfig
+
+<Table
+  headers={['Field', 'Description']}
+  rows={[
+    ['levels', 'Record of level number → DifficultyConfig'],
+    ['initialLevel', 'Starting difficulty level'],
+  ]}
+/>
+
+## Usage
+
+```ts
+import { DifficultyPreset } from 'reeljs';
+
+const preset = new DifficultyPreset({
+  levels: {
+    1: { level: 1, lotteryProbabilities: { cherry: 0.12, bell: 0.08 }, transitionProbabilities: { normalToChance: 0.01 }, replayProbability: 0.16 },
+    2: { level: 2, lotteryProbabilities: { cherry: 0.13, bell: 0.09 }, transitionProbabilities: { normalToChance: 0.015 }, replayProbability: 0.165 },
+    6: { level: 6, lotteryProbabilities: { cherry: 0.15, bell: 0.12 }, transitionProbabilities: { normalToChance: 0.03 }, replayProbability: 0.18 },
+  },
+  initialLevel: 1,
+});
+
+console.log(preset.currentLevel);                  // 1
+console.log(preset.currentConfig.replayProbability); // 0.16
+
+preset.setDifficulty(6);
+console.log(preset.currentConfig.replayProbability); // 0.18
+console.log(preset.getAvailableLevels());            // [1, 2, 6]
+```
+
+## useDifficulty Hook
+
+Provides reactive difficulty state for React components.
+
+```tsx
+import { useDifficulty } from 'reeljs';
+
+function DifficultySelector() {
+  const { currentLevel, currentConfig, setDifficulty } = useDifficulty({
+    levels: {
+      1: { level: 1, lotteryProbabilities: { cherry: 0.12 }, transitionProbabilities: {}, replayProbability: 0.16 },
+      6: { level: 6, lotteryProbabilities: { cherry: 0.15 }, transitionProbabilities: {}, replayProbability: 0.18 },
+    },
+    initialLevel: 1,
+  });
+
+  return (
+    <div>
+      <p>Current Level: {currentLevel}</p>
+      <p>Replay Rate: {currentConfig.replayProbability}</p>
+      {[1, 6].map((lv) => (
+        <button key={lv} onClick={() => setDifficulty(lv)}>Level {lv}</button>
+      ))}
+    </div>
+  );
+}
+```
+
+## 設定1〜6 Implementation Pattern
+
+A standard 6-level difficulty setup matching Japanese pachislot conventions:
+
+```ts
+const difficultyConfig = {
+  levels: {
+    1: { level: 1, lotteryProbabilities: { cherry: 0.120, bell: 0.080, watermelon: 0.040 }, transitionProbabilities: { normalToChance: 0.010 }, replayProbability: 0.160 },
+    2: { level: 2, lotteryProbabilities: { cherry: 0.125, bell: 0.085, watermelon: 0.042 }, transitionProbabilities: { normalToChance: 0.015 }, replayProbability: 0.165 },
+    3: { level: 3, lotteryProbabilities: { cherry: 0.130, bell: 0.090, watermelon: 0.045 }, transitionProbabilities: { normalToChance: 0.018 }, replayProbability: 0.168 },
+    4: { level: 4, lotteryProbabilities: { cherry: 0.135, bell: 0.095, watermelon: 0.048 }, transitionProbabilities: { normalToChance: 0.020 }, replayProbability: 0.172 },
+    5: { level: 5, lotteryProbabilities: { cherry: 0.140, bell: 0.100, watermelon: 0.050 }, transitionProbabilities: { normalToChance: 0.025 }, replayProbability: 0.176 },
+    6: { level: 6, lotteryProbabilities: { cherry: 0.150, bell: 0.120, watermelon: 0.055 }, transitionProbabilities: { normalToChance: 0.030 }, replayProbability: 0.180 },
+  },
+  initialLevel: 1,
+};
+
+// Higher levels = higher probabilities = more favorable for the player
+```

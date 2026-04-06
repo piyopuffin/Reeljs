@@ -1,0 +1,122 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from '../components/Mermaid';
+import { Table } from '../components/Table';
+
+<Meta title="Docs（日本語）/設定シリアライズ" />
+
+# 設定シリアライズ
+
+`ConfigSerializer` は `GameConfig` のシリアライズ・デシリアライズ・バリデーションを提供します。ラウンドトリップ特性を保証し、シリアライズ→デシリアライズで同一の設定が復元されます。
+
+## ラウンドトリップフロー
+
+<Mermaid chart={`
+flowchart LR
+    A[GameConfig] -->|serialize| B[JSON文字列]
+    B -->|deserialize| C[GameConfig]
+    A -.->|ラウンドトリップ| C
+    B -->|validate| D{有効?}
+    D -->|Yes| E[GameConfig 型ガード通過]
+    D -->|No| F[必須フィールド欠落エラー]
+`} />
+
+## GameConfig 構造
+
+<Table
+  headers={['フィールド', '型', '説明']}
+  rows={[
+    ['reelConfigs', 'ReelConfig[]', 'リールストリップとシンボル定義'],
+    ['payTable', 'PayTable', '配当表エントリ'],
+    ['paylines', 'Payline[]', '当選ライン定義'],
+    ['modeTransitionConfig', 'ModeTransitionConfig', 'モード遷移確率'],
+    ['bonusConfigs', 'Record<BonusType, BonusConfig>', 'ボーナス種別ごとの設定'],
+    ['btConfig', 'BTConfig', 'BTモード設定'],
+    ['chanceConfig', 'ChanceConfig', 'チャンスモード設定'],
+    ['notificationConfig', 'NotificationConfig', '告知設定'],
+    ['zoneConfigs', 'Record<string, ZoneConfig>', 'ゾーン定義'],
+    ['betConfig', 'BetConfig', 'クレジット・BET設定'],
+    ['thresholdConfigs', 'ThresholdConfig[]', '閾値トリガー設定'],
+    ['difficultyConfigs', 'Record<number, DifficultyConfig>', '設定段階パラメータ'],
+    ['winningRoleDefinitions', 'WinningRoleDefinition[]', 'カスタム小役定義'],
+  ]}
+/>
+
+## API
+
+### serialize
+
+`GameConfig` をJSON文字列に変換します。
+
+```ts
+import { ConfigSerializer } from 'reeljs';
+
+const json = ConfigSerializer.serialize(gameConfig);
+// ファイル、localStorage、サーバーに保存
+```
+
+### deserialize
+
+JSON文字列を `GameConfig` にパースします。不正なJSONや必須フィールド欠落時はエラーをスローします。
+
+```ts
+const config = ConfigSerializer.deserialize(json);
+// config は完全に型付けされた GameConfig
+```
+
+### validate
+
+値が有効な `GameConfig` かどうかを検証する型ガードです。
+
+```ts
+const data = JSON.parse(someString);
+if (ConfigSerializer.validate(data)) {
+  // data は GameConfig
+  console.log(data.betConfig.initialCredit);
+}
+```
+
+## バリデーションエラー
+
+`deserialize` は説明的なエラーをスローします:
+
+<Table
+  headers={['シナリオ', 'エラーメッセージ']}
+  rows={[
+    ['不正なJSON', 'Failed to parse JSON: <パースエラー>'],
+    ['必須フィールド欠落', 'Invalid GameConfig: missing required fields: reelConfigs, payTable, ...'],
+  ]}
+/>
+
+## JSON保存・読み込みパターン
+
+保存・読み込みの完全なワークフロー:
+
+```ts
+import { ConfigSerializer } from 'reeljs';
+
+// 保存
+function saveConfig(config: GameConfig): void {
+  const json = ConfigSerializer.serialize(config);
+  localStorage.setItem('slotConfig', json);
+}
+
+// 読み込み
+function loadConfig(): GameConfig | null {
+  const json = localStorage.getItem('slotConfig');
+  if (!json) return null;
+  try {
+    return ConfigSerializer.deserialize(json);
+  } catch (e) {
+    console.error('設定が不正です:', e);
+    return null;
+  }
+}
+
+// 使用前にバリデーション
+function importConfig(data: unknown): GameConfig {
+  if (!ConfigSerializer.validate(data)) {
+    throw new Error('設定フォーマットが不正です');
+  }
+  return data;
+}
+```

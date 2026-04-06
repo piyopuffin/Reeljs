@@ -1,0 +1,115 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from './components/Mermaid';
+import { Table } from './components/Table';
+
+<Meta title="Docs (EN)/Winning Role Definition" />
+
+# Winning Role Definition
+
+`WinningRoleDefinition` defines custom winning roles (小役) for the internal lottery. Each role has an ID, display name, type, payout, symbol patterns, and priority for conflict resolution.
+
+## Role Resolution Flow
+
+<Mermaid chart={`
+flowchart TD
+    A[InternalLottery.draw] --> B[Roll random number]
+    B --> C[Match against probability table]
+    C --> D[Resolve WinningRoleDefinition]
+    D --> E{Multiple patterns match?}
+    E -->|Yes| F[Higher priority wins]
+    E -->|No| G[Return WinningRole]
+    F --> G
+`} />
+
+## WinningRoleDefinition
+
+<Table
+  headers={['Field', 'Type', 'Description']}
+  rows={[
+    ['id', 'string', 'Unique identifier (e.g. "cherry", "bell")'],
+    ['name', 'string', 'Display name (e.g. "チェリー", "ベル")'],
+    ['type', 'WinningRoleType', 'BONUS, SMALL_WIN, REPLAY, or MISS'],
+    ['payout', 'number', 'Credit payout amount (0 for BONUS/REPLAY)'],
+    ['patterns', 'string[][]', 'Symbol alignment patterns (use "ANY" for wildcard)'],
+    ['priority', 'number', 'Higher value = higher priority in conflict resolution'],
+  ]}
+/>
+
+## WinningRoleType
+
+<Table
+  headers={['Type', 'Description']}
+  rows={[
+    ['BONUS', 'Bonus win — triggers bonus mode (payout is 0)'],
+    ['SMALL_WIN', 'Small win — direct credit payout (cherry, bell, etc.)'],
+    ['REPLAY', 'Replay — free re-spin (payout is 0)'],
+    ['MISS', 'Miss — no win'],
+  ]}
+/>
+
+## Default Presets
+
+The library provides 7 default role definitions:
+
+<Table
+  headers={['ID', 'Name', 'Type', 'Payout', 'Pattern', 'Priority']}
+  rows={[
+    ['cherry', 'チェリー', 'SMALL_WIN', '2', 'cherry-ANY-ANY', '10'],
+    ['watermelon', 'スイカ', 'SMALL_WIN', '6', 'watermelon×3', '20'],
+    ['bell', 'ベル', 'SMALL_WIN', '8', 'bell×3', '30'],
+    ['replay', 'リプレイ', 'REPLAY', '0', 'replay×3', '5'],
+    ['super_big_bonus', 'SUPER BIG BONUS', 'BONUS', '0', 'seven×3', '100'],
+    ['big_bonus', 'BIG BONUS', 'BONUS', '0', 'bar×3', '90'],
+    ['reg_bonus', 'REG BONUS', 'BONUS', '0', 'seven-seven-bar', '80'],
+  ]}
+/>
+
+## Custom Role Definition
+
+```ts
+import { InternalLottery } from 'reeljs';
+
+const lottery = new InternalLottery({
+  probabilities: {
+    Normal: { cherry: 0.12, bell: 0.08, watermelon: 0.04, replay: 0.16, miss: 0.60 },
+    Chance: { cherry: 0.15, bell: 0.10, watermelon: 0.05, replay: 0.16, miss: 0.54 },
+    Bonus: { bell: 0.30, replay: 0.05, miss: 0.65 },
+    BT: { cherry: 0.12, bell: 0.08, replay: 0.16, miss: 0.64 },
+  },
+  winningRoleDefinitions: [
+    { id: 'cherry', name: 'Cherry', type: 'SMALL_WIN', payout: 2, patterns: [['cherry', 'ANY', 'ANY']], priority: 10 },
+    { id: 'bell', name: 'Bell', type: 'SMALL_WIN', payout: 8, patterns: [['bell', 'bell', 'bell']], priority: 30 },
+    { id: 'watermelon', name: 'Watermelon', type: 'SMALL_WIN', payout: 6, patterns: [['watermelon', 'watermelon', 'watermelon']], priority: 20 },
+    { id: 'replay', name: 'Replay', type: 'REPLAY', payout: 0, patterns: [['replay', 'replay', 'replay']], priority: 5 },
+  ],
+});
+
+const role = lottery.draw('Normal');
+console.log(role.id, role.type, role.payout);
+```
+
+## Priority Resolution
+
+When multiple roles could match, the role with the highest `priority` value wins. This is important for reel control — `ReelController` uses priority to decide which pattern to align.
+
+```ts
+// If both cherry (priority: 10) and bell (priority: 30) could display,
+// bell takes precedence in reel control.
+```
+
+## BET-Exclusive Roles
+
+Certain roles can be restricted to specific BET amounts using `BetConfig.exclusiveRolesPerBet`. Roles not available at the current BET are excluded from the lottery via `excludeRoleIds`.
+
+```ts
+// SUPER BIG BONUS only available at MAX BET (3)
+const betConfig = {
+  initialCredit: 1000,
+  betOptions: [1, 2, 3],
+  defaultBet: 3,
+  exclusiveRolesPerBet: { 3: ['super_big_bonus'] },
+};
+
+// At 1 BET, super_big_bonus is excluded from the draw
+lottery.draw('Normal', undefined, ['super_big_bonus']);
+```

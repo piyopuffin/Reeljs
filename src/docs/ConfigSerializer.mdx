@@ -1,0 +1,122 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from './components/Mermaid';
+import { Table } from './components/Table';
+
+<Meta title="Docs (EN)/Config Serializer" />
+
+# Config Serializer
+
+`ConfigSerializer` provides serialize, deserialize, and validate operations for `GameConfig`. It guarantees round-trip fidelity — serializing then deserializing produces an identical config.
+
+## Round-Trip Flow
+
+<Mermaid chart={`
+flowchart LR
+    A[GameConfig] -->|serialize| B[JSON string]
+    B -->|deserialize| C[GameConfig]
+    A -.->|round-trip| C
+    B -->|validate| D{Valid?}
+    D -->|Yes| E[GameConfig type guard passes]
+    D -->|No| F[Missing fields error]
+`} />
+
+## GameConfig Structure
+
+<Table
+  headers={['Field', 'Type', 'Description']}
+  rows={[
+    ['reelConfigs', 'ReelConfig[]', 'Reel strip and symbol definitions'],
+    ['payTable', 'PayTable', 'Payout table entries'],
+    ['paylines', 'Payline[]', 'Win line definitions'],
+    ['modeTransitionConfig', 'ModeTransitionConfig', 'Mode transition probabilities'],
+    ['bonusConfigs', 'Record<BonusType, BonusConfig>', 'Bonus settings per type'],
+    ['btConfig', 'BTConfig', 'BT mode settings'],
+    ['chanceConfig', 'ChanceConfig', 'Chance mode settings'],
+    ['notificationConfig', 'NotificationConfig', 'Notification settings'],
+    ['zoneConfigs', 'Record<string, ZoneConfig>', 'Zone definitions'],
+    ['betConfig', 'BetConfig', 'Credit and BET settings'],
+    ['thresholdConfigs', 'ThresholdConfig[]', 'Threshold trigger settings'],
+    ['difficultyConfigs', 'Record<number, DifficultyConfig>', 'Difficulty level settings'],
+    ['winningRoleDefinitions', 'WinningRoleDefinition[]', 'Custom winning role definitions'],
+  ]}
+/>
+
+## API
+
+### serialize
+
+Converts a `GameConfig` to a JSON string.
+
+```ts
+import { ConfigSerializer } from 'reeljs';
+
+const json = ConfigSerializer.serialize(gameConfig);
+// Store to file, localStorage, or send to server
+```
+
+### deserialize
+
+Parses a JSON string back to `GameConfig`. Throws on invalid JSON or missing required fields.
+
+```ts
+const config = ConfigSerializer.deserialize(json);
+// config is a fully typed GameConfig
+```
+
+### validate
+
+Type guard that checks if a value is a valid `GameConfig`.
+
+```ts
+const data = JSON.parse(someString);
+if (ConfigSerializer.validate(data)) {
+  // data is GameConfig
+  console.log(data.betConfig.initialCredit);
+}
+```
+
+## Validation Errors
+
+`deserialize` throws descriptive errors:
+
+<Table
+  headers={['Scenario', 'Error Message']}
+  rows={[
+    ['Malformed JSON', 'Failed to parse JSON: <parse error>'],
+    ['Missing fields', 'Invalid GameConfig: missing required fields: reelConfigs, payTable, ...'],
+  ]}
+/>
+
+## JSON Save/Load Pattern
+
+A complete save/load workflow:
+
+```ts
+import { ConfigSerializer } from 'reeljs';
+
+// Save
+function saveConfig(config: GameConfig): void {
+  const json = ConfigSerializer.serialize(config);
+  localStorage.setItem('slotConfig', json);
+}
+
+// Load
+function loadConfig(): GameConfig | null {
+  const json = localStorage.getItem('slotConfig');
+  if (!json) return null;
+  try {
+    return ConfigSerializer.deserialize(json);
+  } catch (e) {
+    console.error('Invalid config:', e);
+    return null;
+  }
+}
+
+// Validate before use
+function importConfig(data: unknown): GameConfig {
+  if (!ConfigSerializer.validate(data)) {
+    throw new Error('Invalid config format');
+  }
+  return data;
+}
+```

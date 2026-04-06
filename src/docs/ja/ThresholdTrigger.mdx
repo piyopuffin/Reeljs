@@ -1,0 +1,126 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from '../components/Mermaid';
+import { Table } from '../components/Table';
+
+<Meta title="Docs（日本語）/スピンカウンター・閾値トリガー" />
+
+# スピンカウンター・閾値トリガー
+
+`SpinCounter` はGameModeごとのスピン回数を管理します。`ThresholdTrigger` はカウンターが閾値に到達した際にアクションを発火し、天井システムを実現します。
+
+## アーキテクチャ
+
+<Mermaid chart={`
+flowchart TD
+    A[レバーON] --> B[SpinCounter.increment]
+    B --> C[ThresholdTrigger.check]
+    C -->|value >= 閾値| D[onThresholdReached コールバック]
+    C -->|value < 閾値| E[継続]
+    D --> F[アクション実行 例: forceBonus]
+    F --> G[SpinCounter.reset + ThresholdTrigger.reroll]
+`} />
+
+## SpinCounter
+
+複数の名前付きカウンターを同時管理します。各カウンターは特定のGameModeを対象とし、条件に応じてリセットされます。
+
+### CounterConfig
+
+<Table
+  headers={['フィールド', '説明']}
+  rows={[
+    ['name', 'カウンター識別子（例: "normalSpins"）'],
+    ['targetGameMode', 'カウント対象のGameMode（Normal, Chance, Bonus, BT）'],
+    ['resetCondition', 'リセット条件文字列（例: "BonusMode"）'],
+  ]}
+/>
+
+```ts
+import { SpinCounter } from 'reeljs';
+
+const counter = new SpinCounter([
+  { name: 'normalSpins', targetGameMode: 'Normal', resetCondition: 'BonusMode' },
+  { name: 'chanceSpins', targetGameMode: 'Chance', resetCondition: 'BonusMode' },
+]);
+
+counter.increment('normalSpins');
+console.log(counter.get('normalSpins')); // 1
+
+// 条件に一致するカウンターを一括リセット
+counter.checkResetCondition('BonusMode'); // normalSpins & chanceSpins をリセット
+```
+
+## ThresholdTrigger
+
+カウンター値を閾値と比較します。固定値と `ThresholdRange`（振り分け天井）の両方をサポートします。
+
+### ThresholdConfig
+
+<Table
+  headers={['フィールド', '説明']}
+  rows={[
+    ['counterName', '対象カウンター名'],
+    ['targetGameMode', '閾値が適用されるGameMode'],
+    ['threshold', '固定値 または { min, max } の範囲指定'],
+    ['action', '閾値到達時に発火するアクション名'],
+    ['resetCondition', 'カウンターリセット条件'],
+  ]}
+/>
+
+```ts
+import { ThresholdTrigger } from 'reeljs';
+
+const trigger = new ThresholdTrigger([
+  { counterName: 'normalSpins', targetGameMode: 'Normal', threshold: { min: 500, max: 800 }, action: 'forceBonus', resetCondition: 'BonusMode' },
+]);
+
+trigger.onThresholdReached((name, value, action) => {
+  console.log(`${name} が ${value} に到達 → ${action}`);
+});
+
+trigger.check('normalSpins', 750); // 解決済み閾値 <= 750 なら発火
+trigger.reroll('normalSpins');     // 次サイクル用に閾値を再抽選
+```
+
+## useThresholdTrigger フック
+
+`SpinCounter` と `ThresholdTrigger` をリアクティブ状態でラップします。
+
+```tsx
+import { useThresholdTrigger } from 'reeljs';
+
+function CeilingDisplay() {
+  const { counters, thresholds, resetCounter } = useThresholdTrigger([
+    { counterName: 'normalSpins', targetGameMode: 'Normal', threshold: { min: 500, max: 800 }, action: 'forceBonus', resetCondition: 'BonusMode' },
+  ]);
+
+  return (
+    <div>
+      <p>スピン数: {counters.normalSpins} / 天井: {thresholds.normalSpins}</p>
+      <button onClick={() => resetCounter('normalSpins')}>リセット</button>
+    </div>
+  );
+}
+```
+
+## 天井実装パターン
+
+SpinCounter + ThresholdTrigger + GameModeManager を組み合わせた典型的な天井実装:
+
+```ts
+// 1. 振り分け天井を設定
+const configs = [
+  { counterName: 'normalSpins', targetGameMode: 'Normal', threshold: { min: 500, max: 800 }, action: 'forceBonus', resetCondition: 'BonusMode' },
+];
+
+// 2. Normalモードの各スピンでインクリメント＆チェック
+counter.increment('normalSpins');
+if (trigger.check('normalSpins', counter.get('normalSpins'))) {
+  // 天井到達 — ボーナス強制突入
+  gameModeManager.transition('Bonus');
+}
+
+// 3. ボーナス終了時にカウンターリセット＆閾値再抽選
+counter.checkResetCondition('BonusMode');
+trigger.reroll('normalSpins');
+```

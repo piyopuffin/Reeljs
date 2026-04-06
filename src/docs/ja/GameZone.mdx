@@ -1,0 +1,123 @@
+import { Meta } from '@storybook/blocks';
+import { Mermaid } from '../components/Mermaid';
+import { Table } from '../components/Table';
+
+<Meta title="Docs（日本語）/ゲームゾーン管理" />
+
+# ゲームゾーン管理
+
+`ZoneManager` はゲームゾーン（区間）を管理します。GameModeの上位レイヤーとして、ゲーム数上限・差枚数上限の監視とゾーン終了時の強制リセットを担当します。
+
+## ゾーン階層
+
+<Mermaid chart={`
+flowchart TD
+    Z[Zone 区間] --> M[GameMode]
+    M --> P[GamePhase]
+    Z -->|"maxGames / maxNetCredits"| R[強制リセット & ゾーン遷移]
+    subgraph Zone
+      direction LR
+      N[normal 通常区間]
+      S[special 特別区間]
+    end
+    subgraph GameMode
+      direction LR
+      NM[Normal]
+      CM[Chance]
+      BM[Bonus]
+      BT[BT]
+    end
+`} />
+
+## ZoneConfig
+
+<Table
+  headers={['フィールド', '説明']}
+  rows={[
+    ['name', 'ゾーンの表示名'],
+    ['maxGames', 'ゾーン内の最大ゲーム数'],
+    ['maxNetCredits', '差枚数上限'],
+    ['resetTargets', 'ゾーン終了時のリセット対象: "gameMode", "spinCounter"'],
+    ['nextZone', '上限到達時の遷移先ゾーン'],
+    ['isSpecial', '特別区間かどうか'],
+  ]}
+/>
+
+## ZoneManager
+
+```ts
+import { ZoneManager } from 'reeljs';
+
+const manager = new ZoneManager({
+  zones: {
+    normal: { name: '通常区間', maxGames: 1500, maxNetCredits: 2400, resetTargets: ['gameMode', 'spinCounter'], nextZone: 'special', isSpecial: false },
+    special: { name: '特別区間', maxGames: 500, maxNetCredits: 1000, resetTargets: ['gameMode'], nextZone: 'normal', isSpecial: true },
+  },
+  initialZone: 'normal',
+});
+
+// コールバック登録
+manager.onZoneChange((from, to) => console.log(`ゾーン: ${from} → ${to}`));
+manager.onReset((targets) => console.log('リセット対象:', targets));
+
+// 各スピンで更新
+manager.update(spinResult);
+
+// 現在の状態を確認
+console.log(manager.currentState); // { currentZone, gamesPlayed, netCredits }
+console.log(manager.indicator);    // { isSpecialZone, zoneName }
+```
+
+## ゾーン遷移フロー
+
+<Mermaid chart={`
+flowchart LR
+    A[update spinResult] --> B{maxGames or maxNetCredits 到達?}
+    B -->|No| C[現在のゾーンを継続]
+    B -->|Yes| D[onReset コールバック発火]
+    D --> E[gamesPlayed & netCredits リセット]
+    E --> F[nextZone へ遷移]
+    F --> G[onZoneChange コールバック発火]
+`} />
+
+## useGameZone フック
+
+Reactコンポーネント向けにリアクティブなゾーン状態を提供します。
+
+```tsx
+import { useGameZone } from 'reeljs';
+
+function ZoneDisplay() {
+  const { currentZone, gamesPlayed, remainingGames, remainingCredits, indicator, update } = useGameZone({
+    zones: {
+      normal: { name: '通常区間', maxGames: 1500, maxNetCredits: 2400, resetTargets: [], nextZone: 'special', isSpecial: false },
+      special: { name: '特別区間', maxGames: 500, maxNetCredits: 1000, resetTargets: ['gameMode'], nextZone: 'normal', isSpecial: true },
+    },
+    initialZone: 'normal',
+  });
+
+  return (
+    <div>
+      <p>{indicator.zoneName}（{indicator.isSpecialZone ? '特別' : '通常'}）</p>
+      <p>消化ゲーム数: {gamesPlayed} / 残り: {remainingGames}G</p>
+    </div>
+  );
+}
+```
+
+## 有利区間の実装パターン
+
+パチスロ規則に基づく有利区間のゲーム数・差枚数管理:
+
+```ts
+const zoneConfig = {
+  zones: {
+    normal: { name: '通常区間', maxGames: 1500, maxNetCredits: 2400, resetTargets: ['gameMode', 'spinCounter'], nextZone: 'special', isSpecial: false },
+    special: { name: '有利区間', maxGames: 1500, maxNetCredits: 2400, resetTargets: ['gameMode', 'spinCounter'], nextZone: 'normal', isSpecial: true },
+  },
+  initialZone: 'normal',
+};
+
+// ZoneIndicator で有利区間ランプの表示を制御
+// indicator.isSpecialZone === true の場合、有利区間ランプを点灯
+```

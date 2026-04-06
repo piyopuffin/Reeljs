@@ -1,0 +1,128 @@
+import { Meta } from '@storybook/blocks';
+import { Table } from './components/Table';
+import { Mermaid } from './components/Mermaid';
+
+<Meta title="Docs (EN)/Sound & BGM" />
+
+# Sound & BGM
+
+`useSoundEffect` provides event-driven sound playback by subscribing to `EventEmitter` events. The hook handles mute/volume state — actual audio playback is left to the developer.
+
+## Architecture
+
+<Mermaid chart={`
+flowchart LR
+    GCM[GameCycleManager] -->|emit| EE[EventEmitter]
+    EE -->|spinStart| SE[useSoundEffect]
+    EE -->|reelStop| SE
+    EE -->|win| SE
+    EE -->|bonusStart| SE
+    SE -->|play| Audio[Audio API]
+`} />
+
+## Basic Usage
+
+```tsx
+import { useSoundEffect, EventEmitter } from 'reeljs';
+
+const emitter = new EventEmitter();
+
+function Game() {
+  const { isMuted, volume, toggleMute, setVolume } = useSoundEffect(
+    {
+      spinStart: '/sounds/spin.mp3',
+      reelStop: '/sounds/stop.mp3',
+      win: '/sounds/win.mp3',
+      bonusStart: '/sounds/bonus.mp3',
+    },
+    emitter,
+  );
+
+  return (
+    <div>
+      <button onClick={toggleMute}>{isMuted ? '🔇' : '🔊'}</button>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.1}
+        value={volume}
+        onChange={(e) => setVolume(Number(e.target.value))}
+      />
+    </div>
+  );
+}
+```
+
+## Sound Map
+
+The first argument is a mapping of event names to audio file URLs.
+
+<Table
+  headers={['Event', 'When', 'Typical Sound']}
+  rows={[
+    ['spinStart', 'Reels start spinning', 'Lever pull / spin start'],
+    ['reelStop', 'Each reel stops', 'Click / thud'],
+    ['win', 'Win detected', 'Coin / fanfare'],
+    ['bonusStart', 'Bonus mode starts', 'Bonus jingle'],
+    ['modeChange', 'Mode transition', 'Mode change chime'],
+    ['notification', 'Win notification fires', 'Alert sound'],
+  ]}
+/>
+
+You can use any event name — custom events work too:
+
+```ts
+useSoundEffect({
+  spinStart: '/sounds/spin.mp3',
+  myCustomEvent: '/sounds/custom.mp3',
+}, emitter);
+
+// Later:
+emitter.emit('myCustomEvent');
+```
+
+## BGM Loop Pattern
+
+`useSoundEffect` is designed for one-shot sound effects. For BGM (looping background music), use `useEvent` with the Web Audio API directly:
+
+```tsx
+import { useEvent, EventEmitter } from 'reeljs';
+import { useRef, useCallback } from 'react';
+
+function BGMPlayer({ emitter }: { emitter: EventEmitter }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { on } = useEvent(emitter);
+
+  // Start BGM on bonus
+  on('bonusStart', () => {
+    if (audioRef.current) {
+      audioRef.current.src = '/bgm/bonus.mp3';
+      audioRef.current.loop = true;
+      audioRef.current.play();
+    }
+  });
+
+  // Stop BGM on mode change back to Normal
+  on('modeChange', (payload: { to: string }) => {
+    if (payload.to === 'Normal' && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  });
+
+  return <audio ref={audioRef} />;
+}
+```
+
+## Mute & Volume
+
+<Table
+  headers={['Property / Method', 'Type', 'Description']}
+  rows={[
+    ['isMuted', 'boolean', 'Current mute state'],
+    ['volume', 'number (0-1)', 'Current volume level'],
+    ['toggleMute()', 'function', 'Toggle mute on/off'],
+    ['setVolume(v)', 'function', 'Set volume (clamped 0-1)'],
+  ]}
+/>
