@@ -13,8 +13,8 @@
   overflow: hidden;
   position: relative;
   width: 80px;
-  border: 1px solid #ccc;
-  background: #1a1a2e;
+  border: 1px solid #1a1a2e;
+  background: #ccc;
 }
 
 .reeljs-reel__track {
@@ -58,7 +58,7 @@
   font-weight: bold;
   border: none;
   border-radius: 6px;
-  background: #3498db;
+  background: #c81728;
   color: #fff;
   cursor: pointer;
   transition: opacity 0.2s;
