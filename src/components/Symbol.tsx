@@ -2,14 +2,6 @@ import React from 'react';
 
 /**
  * 個別シンボルコンポーネントのprops。
- *
- * @typeParam S - シンボルIDの文字列リテラル型
- *
- * @example
- * ```tsx
- * <Symbol symbolId="cherry" highlighted={true} />
- * <Symbol symbolId="bell" renderSymbol={(id) => <img src={`/symbols/${id}.png`} />} />
- * ```
  */
 export interface SymbolProps<S extends string = string> {
   /** シンボルID */
@@ -25,18 +17,8 @@ export interface SymbolProps<S extends string = string> {
 /**
  * 個別シンボルコンポーネント。リール上に表示される1つのシンボルをレンダリングする。
  *
- * @typeParam S - シンボルIDの文字列リテラル型
- * @param props - {@link SymbolProps}
- * @returns シンボルのReact要素
- *
- * @example
- * ```tsx
- * // デフォルトテキスト表示
- * <Symbol symbolId="cherry" />
- *
- * // カスタムレンダリング
- * <Symbol symbolId="cherry" renderSymbol={(id) => <span>🍒</span>} highlighted />
- * ```
+ * - `renderSymbol` を渡すとカスタム表示、省略時はシンボルIDのテキスト表示
+ * - `highlighted` が true の場合、`reeljs-symbol--highlighted` CSSクラスが付与される
  */
 export function Symbol<S extends string = string>({
   symbolId,

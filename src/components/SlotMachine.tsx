@@ -6,17 +6,6 @@ import { AnimationController } from '../infrastructure/animation-controller';
 
 /**
  * メインコンテナコンポーネントのprops。リール群とストップボタンを統合表示する。
- *
- * @typeParam S - シンボルIDの文字列リテラル型
- *
- * @example
- * ```tsx
- * <SlotMachine
- *   symbols={[{ id: 'cherry', name: 'チェリー', weight: 10 }]}
- *   reelCount={3}
- *   rowCount={3}
- * />
- * ```
  */
 export interface SlotMachineProps<S extends string = string> {
   /** リール数（デフォルト: 3） */
@@ -43,28 +32,8 @@ export interface SlotMachineProps<S extends string = string> {
  * スロットゲーム全体を管理するメインコンテナコンポーネント。
  * リール群とストップボタンを横並びにレンダリングする。
  *
- * @typeParam S - シンボルIDの文字列リテラル型
- * @param props - {@link SlotMachineProps}
- * @returns スロットマシンのReact要素
- *
- * @example
- * ```tsx
- * // 基本使用
- * <SlotMachine
- *   symbols={[
- *     { id: 'cherry', name: 'チェリー', weight: 10 },
- *     { id: 'bell', name: 'ベル', weight: 5 },
- *   ]}
- *   reelCount={3}
- *   rowCount={3}
- *   showStopButtons={true}
- * />
- *
- * // カスタムレイアウト
- * <SlotMachine symbols={symbols}>
- *   <CustomLayout />
- * </SlotMachine>
- * ```
+ * - `children` を渡すとカスタムレイアウトとしてレンダリング
+ * - `showStopButtons` で各リールのストップボタン表示を制御
  */
 export function SlotMachine<S extends string = string>({
   reelCount = 3,

@@ -5,7 +5,6 @@ export type ReelDirection = 'down' | 'up';
 
 /**
  * 個別リールコンポーネントのprops。
- * @typeParam S - シンボルIDの文字列リテラル型
  */
 export interface ReelProps<S extends string = string> {
   /** シンボルリスト（リールストリップ） */

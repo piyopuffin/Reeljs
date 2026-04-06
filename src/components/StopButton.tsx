@@ -3,11 +3,6 @@ import type { StopTiming } from '../types';
 
 /**
  * ストップボタンコンポーネントのprops。
- *
- * @example
- * ```tsx
- * <StopButton reelIndex={0} disabled={false} onStop={(idx, timing) => console.log(idx, timing)} />
- * ```
  */
 export interface StopButtonProps {
   /** 対応するリールインデックス（0始まり） */
@@ -28,18 +23,8 @@ export interface StopButtonProps {
  * 各リールに対応するストップボタンコンポーネント。
  * ボタン押下時にReelControllerへStopTimingを通知する。
  *
- * @param props - {@link StopButtonProps}
- * @returns ストップボタンのReact要素
- *
- * @example
- * ```tsx
- * <StopButton
- *   reelIndex={0}
- *   disabled={!spinning}
- *   onStop={(reelIndex, timing) => controller.notifyStop(reelIndex, timing)}
- *   aria-label="リール1停止"
- * />
- * ```
+ * - 対応リールが回転中のみ有効、停止中は無効
+ * - `aria-label` でアクセシビリティ対応
  */
 export function StopButton({
   reelIndex,
