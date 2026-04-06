@@ -638,6 +638,17 @@ interface BetConfig {
     defaultBet: number;
     /** 変動履歴の保持件数（省略時はデフォルト値を使用） */
     historySize?: number;
+    /**
+     * BET額ごとの有効Paylineインデックス。
+     * 省略時は全Paylineが有効。
+     * @example { 1: [1], 2: [0,1,2], 3: [0,1,2,3,4] }
+     */
+    paylinesPerBet?: Record<number, number[]>;
+    /**
+     * BET額ごとの抽選制限。指定されたBET額未満では抽選対象外となるWinningRole IDの一覧。
+     * @example { 3: ['super_big_bonus'] } — super_big_bonusは3BET時のみ抽選
+     */
+    exclusiveRolesPerBet?: Record<number, string[]>;
 }
 /**
  * クレジット変動履歴。クレジット残高の変動1件分の情報を保持する。
@@ -881,17 +892,6 @@ interface GameConfig<S extends string = string> {
 
 /**
  * メインコンテナコンポーネントのprops。リール群とストップボタンを統合表示する。
- *
- * @typeParam S - シンボルIDの文字列リテラル型
- *
- * @example
- * ```tsx
- * <SlotMachine
- *   symbols={[{ id: 'cherry', name: 'チェリー', weight: 10 }]}
- *   reelCount={3}
- *   rowCount={3}
- * />
- * ```
  */
 interface SlotMachineProps<S extends string = string> {
     /** リール数（デフォルト: 3） */
@@ -917,28 +917,8 @@ interface SlotMachineProps<S extends string = string> {
  * スロットゲーム全体を管理するメインコンテナコンポーネント。
  * リール群とストップボタンを横並びにレンダリングする。
  *
- * @typeParam S - シンボルIDの文字列リテラル型
- * @param props - {@link SlotMachineProps}
- * @returns スロットマシンのReact要素
- *
- * @example
- * ```tsx
- * // 基本使用
- * <SlotMachine
- *   symbols={[
- *     { id: 'cherry', name: 'チェリー', weight: 10 },
- *     { id: 'bell', name: 'ベル', weight: 5 },
- *   ]}
- *   reelCount={3}
- *   rowCount={3}
- *   showStopButtons={true}
- * />
- *
- * // カスタムレイアウト
- * <SlotMachine symbols={symbols}>
- *   <CustomLayout />
- * </SlotMachine>
- * ```
+ * - `children` を渡すとカスタムレイアウトとしてレンダリング
+ * - `showStopButtons` で各リールのストップボタン表示を制御
  */
 declare function SlotMachine<S extends string = string>({ reelCount, rowCount, symbols, renderSymbol, animationConfig, showStopButtons, children, className, style, }: SlotMachineProps<S>): React.ReactElement;
 
@@ -946,7 +926,6 @@ declare function SlotMachine<S extends string = string>({ reelCount, rowCount, s
 type ReelDirection = 'down' | 'up';
 /**
  * 個別リールコンポーネントのprops。
- * @typeParam S - シンボルIDの文字列リテラル型
  */
 interface ReelProps<S extends string = string> {
     /** シンボルリスト（リールストリップ） */
@@ -959,7 +938,7 @@ interface ReelProps<S extends string = string> {
     renderSymbol?: (symbolId: S) => React.ReactNode;
     /** 表示行数（デフォルト: 3） */
     rowCount?: number;
-    /** 1シンボルの高さpx（デフォルト: 60） */
+    /** 1シンボルの高さpx（デフォルト: 40） */
     symbolHeight?: number;
     /** 回転速度 秒/1周（デフォルト: 0.6） */
     spinDuration?: number;
@@ -974,14 +953,6 @@ declare function Reel<S extends string = string>({ symbols, spinning, stopPositi
 
 /**
  * 個別シンボルコンポーネントのprops。
- *
- * @typeParam S - シンボルIDの文字列リテラル型
- *
- * @example
- * ```tsx
- * <Symbol symbolId="cherry" highlighted={true} />
- * <Symbol symbolId="bell" renderSymbol={(id) => <img src={`/symbols/${id}.png`} />} />
- * ```
  */
 interface SymbolProps<S extends string = string> {
     /** シンボルID */
@@ -996,28 +967,13 @@ interface SymbolProps<S extends string = string> {
 /**
  * 個別シンボルコンポーネント。リール上に表示される1つのシンボルをレンダリングする。
  *
- * @typeParam S - シンボルIDの文字列リテラル型
- * @param props - {@link SymbolProps}
- * @returns シンボルのReact要素
- *
- * @example
- * ```tsx
- * // デフォルトテキスト表示
- * <Symbol symbolId="cherry" />
- *
- * // カスタムレンダリング
- * <Symbol symbolId="cherry" renderSymbol={(id) => <span>🍒</span>} highlighted />
- * ```
+ * - `renderSymbol` を渡すとカスタム表示、省略時はシンボルIDのテキスト表示
+ * - `highlighted` が true の場合、`reeljs-symbol--highlighted` CSSクラスが付与される
  */
 declare function Symbol<S extends string = string>({ symbolId, renderSymbol, highlighted, className, }: SymbolProps<S>): React.ReactElement;
 
 /**
  * ストップボタンコンポーネントのprops。
- *
- * @example
- * ```tsx
- * <StopButton reelIndex={0} disabled={false} onStop={(idx, timing) => console.log(idx, timing)} />
- * ```
  */
 interface StopButtonProps {
     /** 対応するリールインデックス（0始まり） */
@@ -1037,18 +993,8 @@ interface StopButtonProps {
  * 各リールに対応するストップボタンコンポーネント。
  * ボタン押下時にReelControllerへStopTimingを通知する。
  *
- * @param props - {@link StopButtonProps}
- * @returns ストップボタンのReact要素
- *
- * @example
- * ```tsx
- * <StopButton
- *   reelIndex={0}
- *   disabled={!spinning}
- *   onStop={(reelIndex, timing) => controller.notifyStop(reelIndex, timing)}
- *   aria-label="リール1停止"
- * />
- * ```
+ * - 対応リールが回転中のみ有効、停止中は無効
+ * - `aria-label` でアクセシビリティ対応
  */
 declare function StopButton({ reelIndex, disabled, onStop, className, style, 'aria-label': ariaLabel, }: StopButtonProps): React.ReactElement;
 
@@ -1099,13 +1045,16 @@ declare class InternalLottery {
     private carryOver;
     constructor(config: InternalLotteryConfig);
     /**
-     * 内部抽選を実行し、WinningRole を返却する
+     * 内部抽選を実行し、WinningRole を返却する。
+     * excludeRoleIds が指定された場合、該当する当選役を抽選対象から除外する
+     * （BET額に応じた抽選制限に使用）。
      *
      * @param gameMode - 現在のゲームモード
-     * @param difficultyLevel - 設定段階（オプション、将来の DifficultyPreset 連携用）
+     * @param difficultyLevel - 設定段階（オプション）
+     * @param excludeRoleIds - 抽選対象から除外するWinningRole IDの配列（オプション）
      * @returns 当選役
      */
-    draw(gameMode: GameMode, _difficultyLevel?: number): WinningRole;
+    draw(gameMode: GameMode, _difficultyLevel?: number, excludeRoleIds?: string[]): WinningRole;
     /**
      * CarryOverFlag を設定する。取りこぼし時にボーナス当選状態を持ち越す。
      *
@@ -1326,9 +1275,13 @@ declare class SpinEngine<S extends string = string> {
      *
      * @param winningRole - 内部当選役（省略時はランダムフォールバック）
      * @param stopTimings - 各リールのStopTiming配列（省略時はランダム生成）
+     * @param options - BET額・有効Paylineインデックスのオプション
      * @returns スピン結果
      */
-    spin(winningRole?: WinningRole, stopTimings?: StopTiming[]): SpinResult<S>;
+    spin(winningRole?: WinningRole, stopTimings?: StopTiming[], options?: {
+        betAmount?: number;
+        activePaylineIndices?: number[];
+    }): SpinResult<S>;
     /**
      * InternalLottery のみ実行し、当選役を決定する。
      *
@@ -1347,13 +1300,16 @@ declare class SpinEngine<S extends string = string> {
      */
     controlReels(winningRole: WinningRole, stopTimings?: StopTiming[]): StopResult[];
     /**
-     * Payline 評価のみ実行。横・斜め・V字等のカスタムパターンに対応。
-     * 複数 Payline 同時当選時は全配当を返却する。
+     * Payline 評価のみ実行（全Payline対象）。横・斜め・V字等のカスタムパターンに対応。
      *
      * @param grid - シンボルグリッド（grid[row][reel]）
      * @returns 当選ライン結果の配列
      */
     evaluatePaylines(grid: S[][]): PaylineResult<S>[];
+    /**
+     * 指定されたPayline配列に対してPayline評価を実行する。
+     */
+    private evaluatePaylinesInternal;
     /**
      * PayTable からシンボル配列にマッチするエントリを検索
      */

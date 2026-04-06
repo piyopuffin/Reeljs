@@ -8,7 +8,7 @@ function Reel({
   stopPosition = 0,
   renderSymbol,
   rowCount = 3,
-  symbolHeight = 60,
+  symbolHeight = 40,
   spinDuration = 0.6,
   direction = "down",
   className,
@@ -531,11 +531,12 @@ var SpinEngine = class {
    *
    * @param winningRole - 内部当選役（省略時はランダムフォールバック）
    * @param stopTimings - 各リールのStopTiming配列（省略時はランダム生成）
+   * @param options - BET額・有効Paylineインデックスのオプション
    * @returns スピン結果
    */
-  spin(winningRole, stopTimings) {
+  spin(winningRole, stopTimings, options) {
     const role = winningRole ?? MISS_ROLE;
-    this.reelConfigs.length;
+    const betMultiplier = options?.betAmount ?? 1;
     let stopResults;
     if (winningRole) {
       stopResults = this.controlReels(winningRole, stopTimings);
@@ -543,14 +544,19 @@ var SpinEngine = class {
       stopResults = this.randomStopResults(stopTimings);
     }
     const grid = this.buildGrid(stopResults);
-    const winLines = this.evaluatePaylines(grid);
-    const totalPayout = winLines.reduce((sum, wl) => sum + wl.payout, 0);
+    const activePaylines = options?.activePaylineIndices ? this.paylines.filter((pl) => options.activePaylineIndices.includes(pl.index)) : this.paylines;
+    const winLines = this.evaluatePaylinesInternal(grid, activePaylines);
+    const multipliedWinLines = winLines.map((wl) => ({
+      ...wl,
+      payout: wl.payout * betMultiplier
+    }));
+    const totalPayout = multipliedWinLines.reduce((sum, wl) => sum + wl.payout, 0);
     const isMiss = stopResults.some((sr) => sr.isMiss);
     const isReplay = role.type === "REPLAY";
     const result = {
       grid,
       stopResults,
-      winLines,
+      winLines: multipliedWinLines,
       totalPayout,
       isReplay,
       isMiss,
@@ -594,15 +600,20 @@ var SpinEngine = class {
     return results;
   }
   /**
-   * Payline 評価のみ実行。横・斜め・V字等のカスタムパターンに対応。
-   * 複数 Payline 同時当選時は全配当を返却する。
+   * Payline 評価のみ実行（全Payline対象）。横・斜め・V字等のカスタムパターンに対応。
    *
    * @param grid - シンボルグリッド（grid[row][reel]）
    * @returns 当選ライン結果の配列
    */
   evaluatePaylines(grid) {
+    return this.evaluatePaylinesInternal(grid, this.paylines);
+  }
+  /**
+   * 指定されたPayline配列に対してPayline評価を実行する。
+   */
+  evaluatePaylinesInternal(grid, paylines) {
     const results = [];
-    for (const payline of this.paylines) {
+    for (const payline of paylines) {
       const symbols = [];
       let valid = true;
       for (let reelIdx = 0; reelIdx < payline.positions.length; reelIdx++) {
@@ -2332,13 +2343,16 @@ var InternalLottery = class {
     }
   }
   /**
-   * 内部抽選を実行し、WinningRole を返却する
+   * 内部抽選を実行し、WinningRole を返却する。
+   * excludeRoleIds が指定された場合、該当する当選役を抽選対象から除外する
+   * （BET額に応じた抽選制限に使用）。
    *
    * @param gameMode - 現在のゲームモード
-   * @param difficultyLevel - 設定段階（オプション、将来の DifficultyPreset 連携用）
+   * @param difficultyLevel - 設定段階（オプション）
+   * @param excludeRoleIds - 抽選対象から除外するWinningRole IDの配列（オプション）
    * @returns 当選役
    */
-  draw(gameMode, _difficultyLevel) {
+  draw(gameMode, _difficultyLevel, excludeRoleIds) {
     if (this.carryOver !== null) {
       const carried = this.carryOver.winningRole;
       this.carryOver = { ...this.carryOver, gameCount: this.carryOver.gameCount + 1 };
@@ -2351,6 +2365,9 @@ var InternalLottery = class {
     const roll = this.randomFn();
     let cumulative = 0;
     for (const [roleId, probability] of Object.entries(modeProbabilities)) {
+      if (excludeRoleIds && excludeRoleIds.includes(roleId)) {
+        continue;
+      }
       cumulative += probability;
       if (roll < cumulative) {
         const def = this.roleMap.get(roleId);
