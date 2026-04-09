@@ -748,7 +748,7 @@ interface ThresholdConfig {
 }
 
 /**
- * 設定段階パラメータ。各設定段階における内部抽選確率・モード遷移確率・リプレイ確率を定義する。
+ * 設定パラメータ。各設定における内部抽選確率・モード遷移確率・リプレイ確率を定義する。
  *
  * @example
  * ```ts
@@ -761,7 +761,7 @@ interface ThresholdConfig {
  * ```
  */
 interface DifficultyConfig {
-    /** 設定段階番号 */
+    /** 設定番号 */
     level: number;
     /** 内部抽選確率（小役ID → 確率） */
     lotteryProbabilities: Record<string, number>;
@@ -771,7 +771,7 @@ interface DifficultyConfig {
     replayProbability: number;
 }
 /**
- * 設定段階プリセット設定。全設定段階のパラメータと初期設定段階を定義する。
+ * 設定プリセット設定。全設定のパラメータと初期設定を定義する。
  *
  * @example
  * ```ts
@@ -785,9 +785,9 @@ interface DifficultyConfig {
  * ```
  */
 interface DifficultyPresetConfig {
-    /** 設定段階ごとのパラメータ */
+    /** 設定ごとのパラメータ */
     levels: Record<number, DifficultyConfig>;
-    /** 初期設定段階 */
+    /** 初期設定 */
     initialLevel: number;
 }
 
@@ -886,7 +886,7 @@ interface GameConfig<S extends string = string> {
     betConfig: BetConfig;
     /** 閾値トリガー設定の配列 */
     thresholdConfigs: ThresholdConfig[];
-    /** 設定段階ごとのパラメータ */
+    /** 設定ごとのパラメータ */
     difficultyConfigs: Record<number, DifficultyConfig>;
     /** 小役定義の配列 */
     winningRoleDefinitions: WinningRoleDefinition[];
@@ -1052,7 +1052,7 @@ declare class InternalLottery {
      * （BET額に応じた抽選制限に使用）。
      *
      * @param gameMode - 現在のゲームモード
-     * @param difficultyLevel - 設定段階（オプション）
+     * @param difficultyLevel - 設定（オプション）
      * @param excludeRoleIds - 抽選対象から除外するWinningRole IDの配列（オプション）
      * @returns 当選役
      */
@@ -1305,7 +1305,7 @@ declare class SpinEngine<S extends string = string> {
      * InternalLottery のみ実行し、当選役を決定する。
      *
      * @param gameMode - 現在のゲームモード
-     * @param difficulty - 設定段階（オプション）
+     * @param difficulty - 設定（オプション）
      * @returns 当選役
      * @throws InternalLotteryが未設定の場合
      */
@@ -2280,7 +2280,7 @@ declare function useThresholdTrigger(configs: ThresholdConfig[]): {
 
 /**
  * ゲーム全体の難易度を段階的に管理するモジュール。
- * 設定段階を切り替えることで、内部抽選確率・モード遷移確率・リプレイ確率を一括変更する。
+ * 設定を切り替えることで、内部抽選確率・モード遷移確率・リプレイ確率を一括変更する。
  *
  * @example
  * ```ts
@@ -2299,21 +2299,21 @@ declare class DifficultyPreset {
     private _currentLevel;
     private readonly levels;
     constructor(config: DifficultyPresetConfig);
-    /** 現在の設定段階 */
+    /** 現在の設定 */
     get currentLevel(): number;
     /** 現在のDifficultyConfig */
     get currentConfig(): DifficultyConfig;
     /**
-     * 設定段階変更。指定した段階のDifficultyConfigに切り替える。
+     * 設定変更。指定した段階のDifficultyConfigに切り替える。
      *
-     * @param level - 設定段階番号
-     * @throws 未定義の設定段階が指定された場合
+     * @param level - 設定番号
+     * @throws 未定義の設定が指定された場合
      */
     setDifficulty(level: number): void;
     /**
-     * 利用可能な設定段階一覧を取得する。
+     * 利用可能な設定一覧を取得する。
      *
-     * @returns 設定段階番号の配列
+     * @returns 設定番号の配列
      */
     getAvailableLevels(): number[];
     private validateConfig;
@@ -2321,11 +2321,11 @@ declare class DifficultyPreset {
 }
 
 /**
- * DifficultyPreset をラップし、設定段階のリアクティブ管理を提供するフック。
- * 現在の設定段階とDifficultyConfigをリアクティブに返却する。
+ * DifficultyPreset をラップし、設定のリアクティブ管理を提供するフック。
+ * 現在の設定とDifficultyConfigをリアクティブに返却する。
  *
- * @param config - 設定段階プリセット設定
- * @returns 設定段階状態とsetDifficulty関数
+ * @param config - 設定プリセット設定
+ * @returns 設定状態とsetDifficulty関数
  *
  * @example
  * ```tsx

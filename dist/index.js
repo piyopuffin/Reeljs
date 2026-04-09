@@ -571,7 +571,7 @@ var SpinEngine = class {
    * InternalLottery のみ実行し、当選役を決定する。
    *
    * @param gameMode - 現在のゲームモード
-   * @param difficulty - 設定段階（オプション）
+   * @param difficulty - 設定（オプション）
    * @returns 当選役
    * @throws InternalLotteryが未設定の場合
    */
@@ -2222,7 +2222,7 @@ var DifficultyPreset = class {
     this.levels = config.levels;
     this._currentLevel = config.initialLevel;
   }
-  /** 現在の設定段階 */
+  /** 現在の設定 */
   get currentLevel() {
     return this._currentLevel;
   }
@@ -2231,10 +2231,10 @@ var DifficultyPreset = class {
     return this.levels[this._currentLevel];
   }
   /**
-   * 設定段階変更。指定した段階のDifficultyConfigに切り替える。
+   * 設定変更。指定した段階のDifficultyConfigに切り替える。
    *
-   * @param level - 設定段階番号
-   * @throws 未定義の設定段階が指定された場合
+   * @param level - 設定番号
+   * @throws 未定義の設定が指定された場合
    */
   setDifficulty(level) {
     if (!(level in this.levels)) {
@@ -2243,9 +2243,9 @@ var DifficultyPreset = class {
     this._currentLevel = level;
   }
   /**
-   * 利用可能な設定段階一覧を取得する。
+   * 利用可能な設定一覧を取得する。
    *
-   * @returns 設定段階番号の配列
+   * @returns 設定番号の配列
    */
   getAvailableLevels() {
     return Object.keys(this.levels).map(Number);
@@ -2430,7 +2430,7 @@ var InternalLottery = class {
    * （BET額に応じた抽選制限に使用）。
    *
    * @param gameMode - 現在のゲームモード
-   * @param difficultyLevel - 設定段階（オプション）
+   * @param difficultyLevel - 設定（オプション）
    * @param excludeRoleIds - 抽選対象から除外するWinningRole IDの配列（オプション）
    * @returns 当選役
    */
