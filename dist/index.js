@@ -602,11 +602,54 @@ var SpinEngine = class {
   /**
    * Payline 評価のみ実行（全Payline対象）。横・斜め・V字等のカスタムパターンに対応。
    *
+   * Payline評価のみが必要な場合はこのメソッドを直接使用可能。
+   * StopResultsから完全なSpinResultが必要な場合は {@link evaluateFromStopResults} を使用する。
+   *
    * @param grid - シンボルグリッド（grid[row][reel]）
    * @returns 当選ライン結果の配列
    */
   evaluatePaylines(grid) {
     return this.evaluatePaylinesInternal(grid, this.paylines);
+  }
+  /**
+   * 事前決定済みのStopResult配列からSpinResultを構築する。
+   * controlReelsを再実行せず、stopResultsのactualPositionからgridを構築し、
+   * Payline評価を行う。
+   *
+   * Payline評価のみが必要な場合は {@link evaluatePaylines} を直接使用可能。
+   * 本メソッドはgrid構築・フラグ導出・SpinResult組み立てを含む
+   * 一連のボイラープレートをライブラリ側で吸収する。
+   *
+   * @param stopResults - 各リールの停止結果配列
+   * @param winningRole - 内部当選役
+   * @param options - BET額・有効Paylineインデックスのオプション
+   * @returns スピン結果
+   */
+  evaluateFromStopResults(stopResults, winningRole, options) {
+    const betMultiplier = options?.betAmount ?? 1;
+    const grid = this.buildGrid(stopResults);
+    const activePaylines = options?.activePaylineIndices ? this.paylines.filter((pl) => options.activePaylineIndices.includes(pl.index)) : this.paylines;
+    const winLines = this.evaluatePaylinesInternal(grid, activePaylines);
+    const multipliedWinLines = winLines.map((wl) => ({
+      ...wl,
+      payout: wl.payout * betMultiplier
+    }));
+    const totalPayout = multipliedWinLines.reduce((sum, wl) => sum + wl.payout, 0);
+    const isMiss = stopResults.some((sr) => sr.isMiss);
+    const isReplay = winningRole.type === "REPLAY";
+    const result = {
+      grid,
+      stopResults,
+      winLines: multipliedWinLines,
+      totalPayout,
+      isReplay,
+      isMiss,
+      winningRole
+    };
+    if (isMiss && winningRole) {
+      result.missedRole = winningRole;
+    }
+    return result;
   }
   /**
    * 指定されたPayline配列に対してPayline評価を実行する。
@@ -1209,6 +1252,45 @@ var GameModeManager = class {
     this._modeChangeCallbacks.push(callback);
   }
   /**
+   * 確率判定・遷移バリデーションをバイパスして指定モードへ強制遷移する。
+   * 天井到達時のNormal→BT直接突入やデバッグ用途に使用。
+   *
+   * @param targetMode - 遷移先のGameMode
+   * @param options - オプション設定
+   * @throws targetModeが'Bonus'でoptions.bonusTypeが未指定の場合
+   */
+  forceTransition(targetMode, options) {
+    if (targetMode === "Bonus" && !options?.bonusType) {
+      throw new Error("forceTransition to Bonus requires options.bonusType");
+    }
+    const from = this._currentMode;
+    this._currentMode = targetMode;
+    switch (targetMode) {
+      case "Bonus": {
+        const bonusType = options.bonusType;
+        const config = this.bonusConfigs[bonusType];
+        this._currentBonusType = bonusType;
+        this.initModeState(config.maxSpins, config.maxPayout);
+        break;
+      }
+      case "BT":
+        this._currentBonusType = null;
+        this.initModeState(this.btConfig.maxSpins, this.btConfig.maxPayout);
+        break;
+      case "Chance":
+        this._currentBonusType = null;
+        this.initModeState(this.chanceConfig.maxSpins, this.chanceConfig.maxPayout);
+        break;
+      case "Normal":
+        this._currentBonusType = null;
+        this.resetModeState();
+        break;
+    }
+    for (const cb of this._modeChangeCallbacks) {
+      cb(from, targetMode);
+    }
+  }
+  /**
    * スピン結果と当選役に基づいてモード遷移を判定する
    * @param spinResult スピン結果
    * @param winningRole 内部当選役
@@ -1390,7 +1472,7 @@ var GameModeManager = class {
   // --- 遷移バリデーション ---
   validateTransition(from, to) {
     const validTransitions = {
-      Normal: ["Chance", "Bonus"],
+      Normal: ["Chance", "Bonus", "BT"],
       Chance: ["BT", "Normal"],
       Bonus: ["Normal", "BT"],
       BT: ["Normal", "Bonus"]
@@ -2409,6 +2491,10 @@ var InternalLottery = class {
    * BONUS 種別を解決する
    */
   resolveBonusType(roleId) {
+    const def = this.roleMap.get(roleId);
+    if (def?.bonusType) {
+      return def.bonusType;
+    }
     return BONUS_ID_TO_TYPE[roleId];
   }
   /**

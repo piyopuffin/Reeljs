@@ -159,6 +159,8 @@ interface WinningRoleDefinition {
     patterns: string[][];
     /** 優先順位（大きいほど優先） */
     priority: number;
+    /** ボーナス種別（BONUS型の当選役で使用。省略時はBONUS_ID_TO_TYPEフォールバック） */
+    bonusType?: BonusType;
 }
 /**
  * 持ち越しフラグ。取りこぼし発生時にボーナス当選状態を次ゲーム以降に持ち越すための情報。
@@ -1240,6 +1242,23 @@ interface SpinEngineConfig<S extends string = string> {
     reelController?: ReelController<S>;
 }
 /**
+ * evaluateFromStopResults のオプション。
+ *
+ * @example
+ * ```ts
+ * const options: EvaluateFromStopResultsOptions = {
+ *   betAmount: 3,
+ *   activePaylineIndices: [0, 1, 2],
+ * };
+ * ```
+ */
+interface EvaluateFromStopResultsOptions {
+    /** BET額（winLine.payoutに乗算） */
+    betAmount?: number;
+    /** 有効Paylineインデックス配列（省略時は全Payline） */
+    activePaylineIndices?: number[];
+}
+/**
  * InternalLottery → ReelController → Payline評価を統合するファサード。
  *
  * 開発者は SpinEngine を直接使用するか、個別モジュール（InternalLottery、ReelController）を
@@ -1302,10 +1321,28 @@ declare class SpinEngine<S extends string = string> {
     /**
      * Payline 評価のみ実行（全Payline対象）。横・斜め・V字等のカスタムパターンに対応。
      *
+     * Payline評価のみが必要な場合はこのメソッドを直接使用可能。
+     * StopResultsから完全なSpinResultが必要な場合は {@link evaluateFromStopResults} を使用する。
+     *
      * @param grid - シンボルグリッド（grid[row][reel]）
      * @returns 当選ライン結果の配列
      */
     evaluatePaylines(grid: S[][]): PaylineResult<S>[];
+    /**
+     * 事前決定済みのStopResult配列からSpinResultを構築する。
+     * controlReelsを再実行せず、stopResultsのactualPositionからgridを構築し、
+     * Payline評価を行う。
+     *
+     * Payline評価のみが必要な場合は {@link evaluatePaylines} を直接使用可能。
+     * 本メソッドはgrid構築・フラグ導出・SpinResult組み立てを含む
+     * 一連のボイラープレートをライブラリ側で吸収する。
+     *
+     * @param stopResults - 各リールの停止結果配列
+     * @param winningRole - 内部当選役
+     * @param options - BET額・有効Paylineインデックスのオプション
+     * @returns スピン結果
+     */
+    evaluateFromStopResults(stopResults: StopResult[], winningRole: WinningRole, options?: EvaluateFromStopResultsOptions): SpinResult<S>;
     /**
      * 指定されたPayline配列に対してPayline評価を実行する。
      */
@@ -1491,6 +1528,14 @@ interface GameModeManagerConfig {
     randomFn?: () => number;
 }
 /**
+ * forceTransition のオプション。
+ * Bonusモード遷移時は bonusType の指定が必須。
+ */
+interface ForceTransitionOptions {
+    /** Bonusモード遷移時のボーナス種別（Bonus指定時は必須） */
+    bonusType?: BonusType;
+}
+/**
  * ゲームモードの状態遷移を管理するステートマシン。
  * Normal, Chance, Bonus, BT の4種類のモードを管理し、
  * スピン結果と当選役に基づいてモード遷移を判定する。
@@ -1536,6 +1581,15 @@ declare class GameModeManager {
      * @param callback 遷移元モードと遷移先モードを受け取るコールバック
      */
     onModeChange(callback: (from: GameMode, to: GameMode) => void): void;
+    /**
+     * 確率判定・遷移バリデーションをバイパスして指定モードへ強制遷移する。
+     * 天井到達時のNormal→BT直接突入やデバッグ用途に使用。
+     *
+     * @param targetMode - 遷移先のGameMode
+     * @param options - オプション設定
+     * @throws targetModeが'Bonus'でoptions.bonusTypeが未指定の場合
+     */
+    forceTransition(targetMode: GameMode, options?: ForceTransitionOptions): void;
     /**
      * スピン結果と当選役に基づいてモード遷移を判定する
      * @param spinResult スピン結果
@@ -2420,4 +2474,4 @@ declare const ConfigSerializer: {
     validate(config: unknown): config is GameConfig;
 };
 
-export { type AnimationConfig, AnimationController, type AnimationPhase, type BTConfig, type BetConfig, type BonusConfig, type BonusType, type CarryOverFlag, type ChanceConfig, ConfigSerializer, type CreditHistory, CreditManager, type CreditState, type DifficultyConfig, DifficultyPreset, type DifficultyPresetConfig, EventEmitter, type GameConfig, GameCycleManager, type GameCycleManagerConfig, type GameEvent, type GameMode, GameModeManager, type GameModeManagerConfig, type GamePhase, type GameZone, InternalLottery, type InternalLotteryConfig, type ModeTransitionConfig, type NotificationConfig, NotificationManager, type NotificationPayload, type NotificationType, type PayTable, type PayTableEntry, type Payline, type PaylineResult, Reel, type ReelConfig, ReelController, type ReelControllerConfig, type ReelDirection, type ReelProps, type ReelStrip, type Replay, type SlipRange, SlotMachine, type SlotMachineProps, SpinCounter, SpinEngine, type SpinEngineConfig, type SpinResult, StopButton, type StopButtonProps, type StopResult, type StopTiming, Symbol, type SymbolDefinition, type SymbolProps, type ThresholdConfig, type ThresholdRange, ThresholdTrigger, type UseSlotMachineConfig, type WinPattern, type WinningRole, type WinningRoleDefinition, type WinningRoleType, type ZoneConfig, type ZoneIndicator, ZoneManager, type ZoneManagerConfig, type ZoneState, useCredit, useDifficulty, useEvent, useGameCycle, useGameMode, useGameZone, useNotification, useSlotMachine, useSoundEffect, useThresholdTrigger };
+export { type AnimationConfig, AnimationController, type AnimationPhase, type BTConfig, type BetConfig, type BonusConfig, type BonusType, type CarryOverFlag, type ChanceConfig, ConfigSerializer, type CreditHistory, CreditManager, type CreditState, type DifficultyConfig, DifficultyPreset, type DifficultyPresetConfig, type EvaluateFromStopResultsOptions, EventEmitter, type ForceTransitionOptions, type GameConfig, GameCycleManager, type GameCycleManagerConfig, type GameEvent, type GameMode, GameModeManager, type GameModeManagerConfig, type GamePhase, type GameZone, InternalLottery, type InternalLotteryConfig, type ModeTransitionConfig, type NotificationConfig, NotificationManager, type NotificationPayload, type NotificationType, type PayTable, type PayTableEntry, type Payline, type PaylineResult, Reel, type ReelConfig, ReelController, type ReelControllerConfig, type ReelDirection, type ReelProps, type ReelStrip, type Replay, type SlipRange, SlotMachine, type SlotMachineProps, SpinCounter, SpinEngine, type SpinEngineConfig, type SpinResult, StopButton, type StopButtonProps, type StopResult, type StopTiming, Symbol, type SymbolDefinition, type SymbolProps, type ThresholdConfig, type ThresholdRange, ThresholdTrigger, type UseSlotMachineConfig, type WinPattern, type WinningRole, type WinningRoleDefinition, type WinningRoleType, type ZoneConfig, type ZoneIndicator, ZoneManager, type ZoneManagerConfig, type ZoneState, useCredit, useDifficulty, useEvent, useGameCycle, useGameMode, useGameZone, useNotification, useSlotMachine, useSoundEffect, useThresholdTrigger };
