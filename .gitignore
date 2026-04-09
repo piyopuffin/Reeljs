@@ -9,7 +9,6 @@ node_modules/
 .idea
 Icon
 /tmp
-/package-lock.json
 /npm-debug.log
 /yarn-error.log
 /.yarn
