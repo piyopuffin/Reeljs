@@ -103,6 +103,8 @@ export interface WinningRoleDefinition {
   patterns: string[][];
   /** 優先順位（大きいほど優先） */
   priority: number;
+  /** ボーナス種別（BONUS型の当選役で使用。省略時はBONUS_ID_TO_TYPEフォールバック） */
+  bonusType?: BonusType;
 }
 
 /**

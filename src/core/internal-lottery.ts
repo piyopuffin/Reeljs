@@ -247,6 +247,10 @@ export class InternalLottery {
    * BONUS 種別を解決する
    */
   private resolveBonusType(roleId: string): BonusType | undefined {
+    const def = this.roleMap.get(roleId);
+    if (def?.bonusType) {
+      return def.bonusType;
+    }
     return BONUS_ID_TO_TYPE[roleId];
   }
 

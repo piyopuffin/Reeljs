@@ -331,10 +331,8 @@ describe('GameModeManager', () => {
   });
 
   describe('無効な遷移のエラー処理', () => {
-    it('Normal → BT は無効な遷移', () => {
-      // This is tested indirectly - the validateTransition method prevents it.
-      // We verify the valid transitions map is correct by checking that
-      // Normal can only go to Chance or Bonus.
+    it('遷移条件を満たさない場合 Normal のまま', () => {
+      // randomFn=0.99 で確率判定を通さず、BONUS当選でもないため遷移しない
       const mgr = new GameModeManager(createDefaultConfig({ randomFn: () => 0.99 }));
       expect(mgr.currentMode).toBe('Normal');
       // Normal mode stays Normal when no transition condition is met

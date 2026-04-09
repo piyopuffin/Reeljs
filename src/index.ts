@@ -19,13 +19,13 @@ export { useDifficulty } from './hooks/useDifficulty';
 export { useEvent } from './hooks/useEvent';
 
 // ── Core Engine ──
-export { SpinEngine, type SpinEngineConfig } from './core/spin-engine';
+export { SpinEngine, type SpinEngineConfig, type EvaluateFromStopResultsOptions } from './core/spin-engine';
 export { InternalLottery, type InternalLotteryConfig } from './core/internal-lottery';
 export { ReelController, type ReelControllerConfig } from './core/reel-controller';
 
 // ── Game Management ──
 export { GameCycleManager, type GameCycleManagerConfig } from './game/game-cycle-manager';
-export { GameModeManager, type GameModeManagerConfig } from './game/game-mode-manager';
+export { GameModeManager, type GameModeManagerConfig, type ForceTransitionOptions } from './game/game-mode-manager';
 export { ZoneManager, type ZoneManagerConfig } from './game/zone-manager';
 export { CreditManager } from './game/credit-manager';
 export { NotificationManager } from './game/notification-manager';

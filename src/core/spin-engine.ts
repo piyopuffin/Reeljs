@@ -41,6 +41,24 @@ export interface SpinEngineConfig<S extends string = string> {
   reelController?: ReelController<S>;
 }
 
+/**
+ * evaluateFromStopResults のオプション。
+ *
+ * @example
+ * ```ts
+ * const options: EvaluateFromStopResultsOptions = {
+ *   betAmount: 3,
+ *   activePaylineIndices: [0, 1, 2],
+ * };
+ * ```
+ */
+export interface EvaluateFromStopResultsOptions {
+  /** BET額（winLine.payoutに乗算） */
+  betAmount?: number;
+  /** 有効Paylineインデックス配列（省略時は全Payline） */
+  activePaylineIndices?: number[];
+}
+
 /** MISS 用の WinningRole */
 const MISS_ROLE: WinningRole = {
   id: 'miss',
@@ -202,11 +220,71 @@ export class SpinEngine<S extends string = string> {
   /**
    * Payline 評価のみ実行（全Payline対象）。横・斜め・V字等のカスタムパターンに対応。
    *
+   * Payline評価のみが必要な場合はこのメソッドを直接使用可能。
+   * StopResultsから完全なSpinResultが必要な場合は {@link evaluateFromStopResults} を使用する。
+   *
    * @param grid - シンボルグリッド（grid[row][reel]）
    * @returns 当選ライン結果の配列
    */
   evaluatePaylines(grid: S[][]): PaylineResult<S>[] {
     return this.evaluatePaylinesInternal(grid, this.paylines);
+  }
+
+  /**
+   * 事前決定済みのStopResult配列からSpinResultを構築する。
+   * controlReelsを再実行せず、stopResultsのactualPositionからgridを構築し、
+   * Payline評価を行う。
+   *
+   * Payline評価のみが必要な場合は {@link evaluatePaylines} を直接使用可能。
+   * 本メソッドはgrid構築・フラグ導出・SpinResult組み立てを含む
+   * 一連のボイラープレートをライブラリ側で吸収する。
+   *
+   * @param stopResults - 各リールの停止結果配列
+   * @param winningRole - 内部当選役
+   * @param options - BET額・有効Paylineインデックスのオプション
+   * @returns スピン結果
+   */
+  evaluateFromStopResults(
+    stopResults: StopResult[],
+    winningRole: WinningRole,
+    options?: EvaluateFromStopResultsOptions,
+  ): SpinResult<S> {
+    const betMultiplier = options?.betAmount ?? 1;
+
+    const grid = this.buildGrid(stopResults);
+
+    // Payline filtering: use only active paylines if specified
+    const activePaylines = options?.activePaylineIndices
+      ? this.paylines.filter((pl) => options.activePaylineIndices!.includes(pl.index))
+      : this.paylines;
+
+    const winLines = this.evaluatePaylinesInternal(grid, activePaylines);
+
+    // Apply bet multiplier to each win line payout
+    const multipliedWinLines = winLines.map((wl) => ({
+      ...wl,
+      payout: wl.payout * betMultiplier,
+    }));
+
+    const totalPayout = multipliedWinLines.reduce((sum, wl) => sum + wl.payout, 0);
+    const isMiss = stopResults.some((sr) => sr.isMiss);
+    const isReplay = winningRole.type === 'REPLAY';
+
+    const result: SpinResult<S> = {
+      grid,
+      stopResults,
+      winLines: multipliedWinLines,
+      totalPayout,
+      isReplay,
+      isMiss,
+      winningRole,
+    };
+
+    if (isMiss && winningRole) {
+      result.missedRole = winningRole;
+    }
+
+    return result;
   }
 
   /**

@@ -40,6 +40,15 @@ export interface GameModeManagerConfig {
   randomFn?: () => number;
 }
 
+/**
+ * forceTransition のオプション。
+ * Bonusモード遷移時は bonusType の指定が必須。
+ */
+export interface ForceTransitionOptions {
+  /** Bonusモード遷移時のボーナス種別（Bonus指定時は必須） */
+  bonusType?: BonusType;
+}
+
 /** モード内部状態 */
 interface ModeState {
   remainingSpins: number | null;
@@ -120,6 +129,49 @@ export class GameModeManager {
    */
   onModeChange(callback: (from: GameMode, to: GameMode) => void): void {
     this._modeChangeCallbacks.push(callback);
+  }
+
+  /**
+   * 確率判定・遷移バリデーションをバイパスして指定モードへ強制遷移する。
+   * 天井到達時のNormal→BT直接突入やデバッグ用途に使用。
+   *
+   * @param targetMode - 遷移先のGameMode
+   * @param options - オプション設定
+   * @throws targetModeが'Bonus'でoptions.bonusTypeが未指定の場合
+   */
+  forceTransition(targetMode: GameMode, options?: ForceTransitionOptions): void {
+    if (targetMode === 'Bonus' && !options?.bonusType) {
+      throw new Error('forceTransition to Bonus requires options.bonusType');
+    }
+
+    const from = this._currentMode;
+    this._currentMode = targetMode;
+
+    switch (targetMode) {
+      case 'Bonus': {
+        const bonusType = options!.bonusType!;
+        const config = this.bonusConfigs[bonusType];
+        this._currentBonusType = bonusType;
+        this.initModeState(config.maxSpins, config.maxPayout);
+        break;
+      }
+      case 'BT':
+        this._currentBonusType = null;
+        this.initModeState(this.btConfig.maxSpins, this.btConfig.maxPayout);
+        break;
+      case 'Chance':
+        this._currentBonusType = null;
+        this.initModeState(this.chanceConfig.maxSpins, this.chanceConfig.maxPayout);
+        break;
+      case 'Normal':
+        this._currentBonusType = null;
+        this.resetModeState();
+        break;
+    }
+
+    for (const cb of this._modeChangeCallbacks) {
+      cb(from, targetMode);
+    }
   }
 
   /**
@@ -349,7 +401,7 @@ export class GameModeManager {
   // --- 遷移バリデーション ---
   private validateTransition(from: GameMode, to: GameMode): void {
     const validTransitions: Record<GameMode, GameMode[]> = {
-      Normal: ['Chance', 'Bonus'],
+      Normal: ['Chance', 'Bonus', 'BT'],
       Chance: ['BT', 'Normal'],
       Bonus: ['Normal', 'BT'],
       BT: ['Normal', 'Bonus'],
