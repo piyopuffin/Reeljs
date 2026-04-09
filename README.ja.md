@@ -123,9 +123,10 @@ function Game() {
 
 | モジュール | 説明 |
 |----------|------|
-| `SpinEngine` | 内部抽選 → 出目制御 → Payline評価の統合ファサード |
+| `SpinEngine` | 内部抽選 → 出目制御 → Payline評価の統合ファサード。`evaluateFromStopResults()` で事前決定済みStopResultsからSpinResultを構築可能 |
 | `InternalLottery` | レバーON時の当選役決定 |
 | `ReelController` | 引き込み・蹴飛ばしによる停止位置制御 |
+| `GameModeManager` | モード遷移管理。`forceTransition()` で確率判定をバイパスした強制遷移が可能 |
 | `GameCycleManager` | 14フェーズのゲームサイクルオーケストレーター |
 | `CreditManager` | クレジット残高操作 |
 | `ConfigSerializer` | ゲーム設定のJSON シリアライズ/デシリアライズ |

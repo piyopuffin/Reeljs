@@ -121,3 +121,37 @@ import { StopButton } from 'reeljs';
 
 <StopButton reelIndex={0} onStop={(timing) => handleStop(0, timing)} disabled={!isSpinning} />
 ```
+
+## evaluateFromStopResults
+
+`SpinEngine.evaluateFromStopResults()` builds a `SpinResult` from pre-determined `StopResult[]` without re-running `controlReels`. It constructs the grid from each StopResult's `actualPosition` and runs payline evaluation.
+
+Use this when you manage individual stop results (e.g. collecting isMiss/actualPosition in handleStop callbacks) and need a complete SpinResult.
+
+```ts
+import { SpinEngine } from 'reeljs';
+
+const engine = new SpinEngine(config);
+
+// Stop results collected from individual reel stops
+const stopResults: StopResult[] = [/* ... */];
+const winningRole: WinningRole = lottery.draw('Normal');
+
+// Build SpinResult from StopResults
+const result = engine.evaluateFromStopResults(stopResults, winningRole, {
+  betAmount: 3,
+  activePaylineIndices: [0, 1, 2, 3, 4],
+});
+
+console.log(result.grid, result.totalPayout, result.isMiss);
+```
+
+### EvaluateFromStopResultsOptions
+
+<Table
+  headers={['Field', 'Type', 'Description']}
+  rows={[
+    ['betAmount', 'number (optional)', 'BET amount multiplied to winLine.payout (default: 1)'],
+    ['activePaylineIndices', 'number[] (optional)', 'Active payline indices. Evaluates all paylines if omitted'],
+  ]}
+/>

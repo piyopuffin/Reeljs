@@ -32,6 +32,7 @@ flowchart TD
     ['payout', 'number', 'Credit payout amount (0 for BONUS/REPLAY)'],
     ['patterns', 'string[][]', 'Symbol alignment patterns (use "ANY" for wildcard)'],
     ['priority', 'number', 'Higher value = higher priority in conflict resolution'],
+    ['bonusType', 'BonusType (optional)', 'Bonus type for BONUS roles. Falls back to BONUS_ID_TO_TYPE if omitted'],
   ]}
 />
 
@@ -95,6 +96,24 @@ When multiple roles could match, the role with the highest `priority` value wins
 ```ts
 // If both cherry (priority: 10) and bell (priority: 30) could display,
 // bell takes precedence in reel control.
+```
+
+## BonusType on WinningRoleDefinition
+
+You can specify `bonusType` directly on a `WinningRoleDefinition` to control which bonus type is triggered. This takes priority over the default `BONUS_ID_TO_TYPE` mapping.
+
+```ts
+const customRoles = [
+  {
+    id: 'my_bonus',
+    name: 'My Custom Bonus',
+    type: 'BONUS',
+    payout: 0,
+    patterns: [['seven', 'seven', 'seven']],
+    priority: 100,
+    bonusType: 'SUPER_BIG_BONUS', // Explicit bonus type
+  },
+];
 ```
 
 ## BET-Exclusive Roles

@@ -123,9 +123,10 @@ function Game() {
 
 | Module | Description |
 |--------|-------------|
-| `SpinEngine` | Lottery → reel control → payline evaluation |
+| `SpinEngine` | Lottery → reel control → payline evaluation. Also provides `evaluateFromStopResults()` for building SpinResult from pre-determined StopResults |
 | `InternalLottery` | Pre-spin winning role draw |
 | `ReelController` | Slip/reject stop position control |
+| `GameModeManager` | Mode transitions with `forceTransition()` for bypassing normal transition logic |
 | `GameCycleManager` | 14-phase game lifecycle orchestrator |
 | `CreditManager` | Credit balance operations |
 | `ConfigSerializer` | JSON serialize/deserialize game config |

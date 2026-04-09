@@ -121,3 +121,37 @@ import { StopButton } from 'reeljs';
 
 <StopButton reelIndex={0} onStop={(timing) => handleStop(0, timing)} disabled={!isSpinning} />
 ```
+
+## evaluateFromStopResults
+
+`SpinEngine.evaluateFromStopResults()` は事前決定済みの `StopResult[]` から `SpinResult` を構築します。`controlReels` を再実行せず、各StopResultの `actualPosition` からgridを構築し、Payline評価を行います。
+
+個別停止制御（handleStop内でisMiss・actualPositionを保持するパターン）と組み合わせて使用します。
+
+```ts
+import { SpinEngine } from 'reeljs';
+
+const engine = new SpinEngine(config);
+
+// 個別停止結果を収集済み
+const stopResults: StopResult[] = [/* ... */];
+const winningRole: WinningRole = lottery.draw('Normal');
+
+// StopResultsからSpinResultを構築
+const result = engine.evaluateFromStopResults(stopResults, winningRole, {
+  betAmount: 3,
+  activePaylineIndices: [0, 1, 2, 3, 4],
+});
+
+console.log(result.grid, result.totalPayout, result.isMiss);
+```
+
+### EvaluateFromStopResultsOptions
+
+<Table
+  headers={['フィールド', '型', '説明']}
+  rows={[
+    ['betAmount', 'number（省略可）', 'BET額。winLine.payoutに乗算される（デフォルト: 1）'],
+    ['activePaylineIndices', 'number[]（省略可）', '有効Paylineインデックス配列。省略時は全Payline'],
+  ]}
+/>

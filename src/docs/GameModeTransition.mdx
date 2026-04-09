@@ -15,6 +15,7 @@ stateDiagram-v2
     [*] --> Normal
     Normal --> Chance : Chance transition condition met
     Normal --> Bonus : Bonus win (InternalLottery)
+    Normal --> BT : forceTransition (e.g. ceiling)
     Chance --> BT : WinPattern matched
     Chance --> Normal : Max spins / MaxPayout reached
     Bonus --> Normal : BIG_BONUS / REG_BONUS ended
@@ -47,3 +48,27 @@ const { currentMode, currentBonusType, remainingSpins } = useGameMode({
   chanceConfig: { maxSpins: 20, maxPayout: 200, winPatterns: [] },
 });
 ```
+
+## forceTransition
+
+`GameModeManager.forceTransition()` bypasses probability checks and transition validation to force a mode change. Useful for ceiling (天井) mechanics or debug tools.
+
+```ts
+import { GameModeManager } from 'reeljs';
+
+const manager = new GameModeManager(config);
+
+// Force transition to BT (e.g. ceiling reached)
+manager.forceTransition('BT');
+
+// Force transition to Bonus (bonusType is required)
+manager.forceTransition('Bonus', { bonusType: 'SUPER_BIG_BONUS' });
+```
+
+<Table
+  headers={['Parameter', 'Type', 'Description']}
+  rows={[
+    ['targetMode', 'GameMode', 'Target mode to transition to'],
+    ['options.bonusType', 'BonusType (optional)', 'Required when targetMode is "Bonus"'],
+  ]}
+/>
