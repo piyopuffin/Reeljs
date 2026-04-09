@@ -139,8 +139,9 @@ Interactive demos and documentation are available via Storybook:
 npm run storybook
 ```
 
-<!-- Replace with deployed URL when available -->
-<!-- [Live Demo](https://your-storybook-url.example.com) -->
+or
+
+[Live Demo and Documents](https://piyopuffin.github.io/Reeljs)
 
 ## License
 

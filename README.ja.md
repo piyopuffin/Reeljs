@@ -138,3 +138,7 @@ function Game() {
 ```bash
 npm run storybook
 ```
+
+または
+
+[Storybook on Github Pages](https://piyopuffin.github.io/Reeljs/?path=/docs/docs%EF%BC%88%E6%97%A5%E6%9C%AC%E8%AA%9E%EF%BC%89-%E8%A8%AD%E5%AE%9A%E3%82%B7%E3%83%AA%E3%82%A2%E3%83%A9%E3%82%A4%E3%82%BA--docs)
