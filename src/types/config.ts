@@ -62,7 +62,7 @@ export interface GameConfig<S extends string = string> {
   betConfig: BetConfig;
   /** 閾値トリガー設定の配列 */
   thresholdConfigs: ThresholdConfig[];
-  /** 設定段階ごとのパラメータ */
+  /** 設定ごとのパラメータ */
   difficultyConfigs: Record<number, DifficultyConfig>;
   /** 小役定義の配列 */
   winningRoleDefinitions: WinningRoleDefinition[];

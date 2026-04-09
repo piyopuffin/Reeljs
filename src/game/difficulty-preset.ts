@@ -2,7 +2,7 @@ import type { DifficultyConfig, DifficultyPresetConfig } from '../types/difficul
 
 /**
  * ゲーム全体の難易度を段階的に管理するモジュール。
- * 設定段階を切り替えることで、内部抽選確率・モード遷移確率・リプレイ確率を一括変更する。
+ * 設定を切り替えることで、内部抽選確率・モード遷移確率・リプレイ確率を一括変更する。
  *
  * @example
  * ```ts
@@ -27,7 +27,7 @@ export class DifficultyPreset {
     this._currentLevel = config.initialLevel;
   }
 
-  /** 現在の設定段階 */
+  /** 現在の設定 */
   get currentLevel(): number {
     return this._currentLevel;
   }
@@ -38,10 +38,10 @@ export class DifficultyPreset {
   }
 
   /**
-   * 設定段階変更。指定した段階のDifficultyConfigに切り替える。
+   * 設定変更。指定した段階のDifficultyConfigに切り替える。
    *
-   * @param level - 設定段階番号
-   * @throws 未定義の設定段階が指定された場合
+   * @param level - 設定番号
+   * @throws 未定義の設定が指定された場合
    */
   setDifficulty(level: number): void {
     if (!(level in this.levels)) {
@@ -51,9 +51,9 @@ export class DifficultyPreset {
   }
 
   /**
-   * 利用可能な設定段階一覧を取得する。
+   * 利用可能な設定一覧を取得する。
    *
-   * @returns 設定段階番号の配列
+   * @returns 設定番号の配列
    */
   getAvailableLevels(): number[] {
     return Object.keys(this.levels).map(Number);

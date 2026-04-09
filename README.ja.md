@@ -116,7 +116,7 @@ function Game() {
 | `useSoundEffect` | イベント駆動のサウンド再生 |
 | `useThresholdTrigger` | スピンカウンター・閾値トリガー |
 | `useGameZone` | ゲームゾーン（区間）管理 |
-| `useDifficulty` | 設定段階の切り替え |
+| `useDifficulty` | 設定の切り替え |
 | `useEvent` | EventEmitterの購読 |
 
 ### コアモジュール

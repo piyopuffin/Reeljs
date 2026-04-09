@@ -2,11 +2,11 @@ import { Meta } from '@storybook/blocks';
 import { Mermaid } from '../components/Mermaid';
 import { Table } from '../components/Table';
 
-<Meta title="Docs（日本語）/設定段階" />
+<Meta title="Docs（日本語）/設定" />
 
-# 設定段階
+# 設定
 
-`DifficultyPreset` は設定段階を管理します。設定を切り替えることで、内部抽選確率・モード遷移確率・リプレイ確率を一括変更します。
+`DifficultyPreset` は設定を管理します。設定を切り替えることで、内部抽選確率・モード遷移確率・リプレイ確率を一括変更します。
 
 ## 概要
 
@@ -29,7 +29,7 @@ flowchart TD
 <Table
   headers={['フィールド', '説明']}
   rows={[
-    ['level', '設定段階番号（例: 1〜6）'],
+    ['level', '設定番号（例: 1〜6）'],
     ['lotteryProbabilities', '小役ID別の当選確率'],
     ['transitionProbabilities', 'モード遷移確率の上書き'],
     ['replayProbability', 'リプレイ（再遊技）確率'],
@@ -41,8 +41,8 @@ flowchart TD
 <Table
   headers={['フィールド', '説明']}
   rows={[
-    ['levels', '設定段階番号 → DifficultyConfig のレコード'],
-    ['initialLevel', '初期設定段階'],
+    ['levels', '設定番号 → DifficultyConfig のレコード'],
+    ['initialLevel', '初期設定'],
   ]}
 />
 
@@ -70,7 +70,7 @@ console.log(preset.getAvailableLevels());            // [1, 2, 6]
 
 ## useDifficulty フック
 
-Reactコンポーネント向けにリアクティブな設定段階状態を提供します。
+Reactコンポーネント向けにリアクティブな設定状態を提供します。
 
 ```tsx
 import { useDifficulty } from 'reeljs';

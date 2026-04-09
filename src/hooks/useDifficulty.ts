@@ -3,11 +3,11 @@ import type { DifficultyConfig, DifficultyPresetConfig } from '../types';
 import { DifficultyPreset } from '../game/difficulty-preset';
 
 /**
- * DifficultyPreset をラップし、設定段階のリアクティブ管理を提供するフック。
- * 現在の設定段階とDifficultyConfigをリアクティブに返却する。
+ * DifficultyPreset をラップし、設定のリアクティブ管理を提供するフック。
+ * 現在の設定とDifficultyConfigをリアクティブに返却する。
  *
- * @param config - 設定段階プリセット設定
- * @returns 設定段階状態とsetDifficulty関数
+ * @param config - 設定プリセット設定
+ * @returns 設定状態とsetDifficulty関数
  *
  * @example
  * ```tsx

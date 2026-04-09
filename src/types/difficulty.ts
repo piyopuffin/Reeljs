@@ -1,7 +1,7 @@
 import type { ModeTransitionConfig } from './game-mode';
 
 /**
- * 設定段階パラメータ。各設定段階における内部抽選確率・モード遷移確率・リプレイ確率を定義する。
+ * 設定パラメータ。各設定における内部抽選確率・モード遷移確率・リプレイ確率を定義する。
  *
  * @example
  * ```ts
@@ -14,7 +14,7 @@ import type { ModeTransitionConfig } from './game-mode';
  * ```
  */
 export interface DifficultyConfig {
-  /** 設定段階番号 */
+  /** 設定番号 */
   level: number;
   /** 内部抽選確率（小役ID → 確率） */
   lotteryProbabilities: Record<string, number>;
@@ -25,7 +25,7 @@ export interface DifficultyConfig {
 }
 
 /**
- * 設定段階プリセット設定。全設定段階のパラメータと初期設定段階を定義する。
+ * 設定プリセット設定。全設定のパラメータと初期設定を定義する。
  *
  * @example
  * ```ts
@@ -39,8 +39,8 @@ export interface DifficultyConfig {
  * ```
  */
 export interface DifficultyPresetConfig {
-  /** 設定段階ごとのパラメータ */
+  /** 設定ごとのパラメータ */
   levels: Record<number, DifficultyConfig>;
-  /** 初期設定段階 */
+  /** 初期設定 */
   initialLevel: number;
 }

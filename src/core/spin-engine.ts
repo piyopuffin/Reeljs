@@ -186,7 +186,7 @@ export class SpinEngine<S extends string = string> {
    * InternalLottery のみ実行し、当選役を決定する。
    *
    * @param gameMode - 現在のゲームモード
-   * @param difficulty - 設定段階（オプション）
+   * @param difficulty - 設定（オプション）
    * @returns 当選役
    * @throws InternalLotteryが未設定の場合
    */

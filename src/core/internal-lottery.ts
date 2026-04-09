@@ -171,7 +171,7 @@ export class InternalLottery {
    * （BET額に応じた抽選制限に使用）。
    *
    * @param gameMode - 現在のゲームモード
-   * @param difficultyLevel - 設定段階（オプション）
+   * @param difficultyLevel - 設定（オプション）
    * @param excludeRoleIds - 抽選対象から除外するWinningRole IDの配列（オプション）
    * @returns 当選役
    */
